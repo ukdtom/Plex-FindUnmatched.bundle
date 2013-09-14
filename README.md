@@ -4,6 +4,6 @@ The Plex-FindUnmatched is a plugin for Plex Media Server, that will scan section
 Work To Do:
 
  * Support sections that spawns more than one directory
- * Support scaked medias
+ * Support stacked medias
  * Create some kind of output report for users. (Currently only feedback is in the log)
 
