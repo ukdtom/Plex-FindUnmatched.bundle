@@ -1,0 +1,37 @@
+[
+	{
+		"id":"host",
+		"label":"IP address or hostname + port of PMS machine",
+		"type":"text",
+		"default":"localhost:32400"
+	},
+
+	{
+		"id":"VIDEO_EXTENSIONS",
+		"label":"Valid Media extentions to scan for",
+		"type":"text",
+		"default":".m4v, .3gp, .nsv, .ts, .ty, .strm, .rm, .rmvb, .m3u, .mov, .qt, .divx, .xvid, .bivx, .vob, .nrg, .img, .iso, .pva, .wmv, .asf, .asx, .ogm, .m2v, .avi, .bin, .dat, .dvr-ms, .mpg, .mpeg, .mp4, .mkv, .avc, .vp3, .svq3, .nuv, .viv, .dv, .fli, .flv, .rar, .001, .wpl, .zip, .jpg"
+	},
+
+	{
+		"id":"OK_FILES",
+		"label":"Files that are ignorred, seperated with a comma, and * is allowed as a wildcard",
+		"type":"text",
+		"default":"imdb.nfo, .DS_Store, __db.001, .*"
+	},
+
+	{
+		"id":"IGNORED_DIRS",
+		"label":"Ignorred directories, seperated with a comma",
+		"type":"text",
+		"default":".@__thumb, /.AppleDouble/"
+	},
+
+	{
+		"id":"OTHER_EXTENSIONS",
+		"label":"Ignorred extentions, seperated with a comma",
+		"type":"text",
+		"default":".srt, .xml, .idx, .jpg, .sub"
+	}
+
+]
