@@ -1,0 +1,12 @@
+V0.0.1.0:
+
+Modulized a bit more
+Updated readme
+Added changelog
+Added version file
+
+
+V0.0.0.9:
+
+Initial version
+
