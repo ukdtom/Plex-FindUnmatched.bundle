@@ -23,18 +23,19 @@ ICON = 'icon-FindUnmatched.png'
 PREFIX = '/applications/findUnmatched'
 
 ####################################################################################################
+# Start function
+####################################################################################################
 def Start():
-
 	Plugin.AddViewGroup('List', viewMode='List', mediaType='items')
-
 	ObjectContainer.art = R(ART)
 	ObjectContainer.title1 = NAME
 	ObjectContainer.view_group = 'List'
 	DirectoryObject.thumb = R(ICON)
 	HTTP.CacheTime = 0
 	getPrefs()
-	
 
+####################################################################################################
+# Main menu
 ####################################################################################################
 @handler(PREFIX, NAME, thumb=ICON, art=ART)
 def MainMenu():
@@ -55,6 +56,8 @@ def MainMenu():
 	return oc
 
 ####################################################################################################
+# Grab user selection of a section, and get to work
+####################################################################################################
 @route(PREFIX + '/confirmScan')
 def confirmScan(title, paths, key):
 	Log.Debug("*******  Starting confirmScan  ***********")
@@ -62,16 +65,9 @@ def confirmScan(title, paths, key):
 	myMediaURL = PMS_URL + key + "/all"		
 	myMediaPaths = []
 	Log.Debug("Path to medias in section is %s" %(myMediaURL))
-	try:
-		myMedias = XML.ElementFromURL(myMediaURL).xpath('//Video')
-		for myMedia in myMedias:
-			title = myMedia.get('title')
-			myFilePath = str(myMedia.xpath('Media/Part/@file'))[2:-2]
-			myMediaPaths.append(myFilePath)
-			Log.Debug("Media: '%s' with a path of : %s" %(title, myFilePath))
-	except:
-		pass
-	#******* All media from the Plex database is now in the list named myMediaPaths ***********
+	# Scan the database
+	myMediaPaths = scanDB(myMediaURL)
+	# Scan the filesystem
 	files = listTree(paths)
 	missing = findUnmatchedFiles(files, myMediaPaths)
 	Log.Info("*********************** The END RESULT Start *****************")
@@ -80,6 +76,8 @@ def confirmScan(title, paths, key):
 	Log.Debug("*******  Ending confirmScan  ***********")
 	return oc
 
+####################################################################################################
+# Do the files
 ####################################################################################################
 @route(PREFIX + '/findUnmatchedFiles')
 def findUnmatchedFiles(filePaths, dbPaths):
@@ -95,7 +93,6 @@ def findUnmatchedFiles(filePaths, dbPaths):
 	Log.Debug("File paths:")
 	Log.Debug(filePaths)
 	missing.append("The following files are missing in the Plex database")        
-
         for filePath in filePaths:
 		Log.Debug("Handling file %s ..." %(filePath))		
 		if filePath not in dbPaths:
@@ -120,11 +117,10 @@ def findUnmatchedFiles(filePaths, dbPaths):
 			else:
 				Log.Debug("Missing this file")
 				missing.append(filePath)
-
-
 	return missing
 
-
+####################################################################################################
+# Get user settings, and if not existing, get the defaults
 ####################################################################################################
 @route(PREFIX + '/getPrefs')
 def getPrefs():
@@ -151,6 +147,8 @@ def getPrefs():
 	return
 
 ####################################################################################################
+# This function will scan the filesystem for files
+####################################################################################################
 @route(PREFIX + '/listTree')
 def listTree(top, files=list()):
 	Log.Debug("******* Starting ListTree with a path of %s***********" %(top))
@@ -171,5 +169,25 @@ def listTree(top, files=list()):
 				Log.Debug("Skipping %s" %(pathname))
 		return r
 	except UnicodeDecodeError:
-		Log.Debug("Detected an invalid caracter in the file/directory following this : %s" %(pathname))
+		Log.Critical("Detected an invalid caracter in the file/directory following this : %s" %(pathname))
+
+####################################################################################################
+# This function will scan a section for filepaths in medias
+####################################################################################################
+@route(PREFIX + '/scanDB')
+def scanDB(myMediaURL, myMediaPaths=list()):
+	Log.Debug("******* Starting scanDB with an URL of %s***********" %(myMediaURL))
+	r = myMediaPaths[:]
+	try:
+		myMedias = XML.ElementFromURL(myMediaURL).xpath('//Video')
+		for myMedia in myMedias:
+			title = myMedia.get('title')
+			myFilePath = str(myMedia.xpath('Media/Part/@file'))[2:-2]
+			myMediaPaths.append(myFilePath)
+			Log.Debug("Media: '%s' with a path of : %s" %(title, myFilePath))
+			r.append(myFilePath)
+		return r
+	except:
+		Log.Critical("Detected an exception in scanDB")
+		pass
 
