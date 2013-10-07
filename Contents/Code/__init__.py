@@ -88,6 +88,9 @@ def confirmScan(title, key, sectiontype):
 		myMediaPaths = scanMovieDB(myMediaURL)
 	if sectiontype == "show":
 		myMediaPaths = scanShowDB(myMediaURL)
+	if sectiontype == "artist":
+		myMediaPaths = scanArtistDB(myMediaURL)
+
 
 
 	Log.Debug("Section filepath as stored in the database are: %s" %(myMediaPaths))
@@ -151,7 +154,7 @@ def findUnmatchedFiles(filePaths, dbPaths):
 					#ignore images and subtitles
 					Log.Debug("File is part of ignored extentions")
 					continue
-				elif (cext not in VIDEO_EXTENSIONS):
+				elif (cext not in VALID_EXTENSIONS):
 					#these shouldn't be here
 					if (display_ignores):
 						Log.Debug("Ignoring %s" %(filePath))
@@ -174,9 +177,9 @@ def getPrefs():
 	global PMS_URL
 	PMS_URL = 'http://%s/library/sections/' %(host)
 	Log.Debug("PMS_URL is : %s" %(PMS_URL))
-	global VIDEO_EXTENSIONS
-	VIDEO_EXTENSIONS = Prefs['VIDEO_EXTENSIONS']
-	Log.Debug("VIDEO_EXTENSIONS from prefs are : %s" %(VIDEO_EXTENSIONS))	
+	global VALID_EXTENSIONS
+	VALID_EXTENSIONS = Prefs['VALID_EXTENSIONS']
+	Log.Debug("VALID_EXTENSIONS from prefs are : %s" %(VALID_EXTENSIONS))	
 	global OK_FILES
 	OK_FILES = Prefs['OK_FILES']
 	Log.Debug("OK_FILES from prefs are : %s" %(OK_FILES))
@@ -236,7 +239,7 @@ def scanMovieDB(myMediaURL, myMediaPaths=list()):
 
 
 ####################################################################################################
-# This function will scan a movie section for filepaths in medias
+# This function will scan a TV-Show section for filepaths in medias
 ####################################################################################################
 @route(PREFIX + '/scanShowDB')
 def scanShowDB(myMediaURL, myMediaPaths=list()):
@@ -262,4 +265,34 @@ def scanShowDB(myMediaURL, myMediaPaths=list()):
 		Log.Critical("Detected an exception in scanShowDB")
 		pass
 	Log.Debug("******* Ending scanShowDB ***********")
+
+
+####################################################################################################
+# This function will scan a Music section for filepaths in medias
+####################################################################################################
+@route(PREFIX + '/scanArtistDB')
+def scanArtistDB(myMediaURL, myMediaPaths=list()):
+	Log.Debug("******* Starting scanArtistDB with an URL of %s***********" %(myMediaURL))
+	r = myMediaPaths[:]
+	Log.Debug("Host is %s" %(host))
+	try:
+		myMedias = XML.ElementFromURL(myMediaURL).xpath('//Directory')
+		for myMedia in myMedias:
+			ratingKey = myMedia.get("ratingKey")
+			Log.Debug("RatingKey is %s" %(ratingKey))
+			myURL = "http://" + host + "/library/metadata/" + ratingKey + "/allLeaves"
+			Log.Debug("myURL is %s" %(myURL))
+			myMedias2 = XML.ElementFromURL(myURL).xpath('//Track')
+			for myMedia2 in myMedias2:
+				title = myMedia2.get("grandparentTitle") + "/" + myMedia2.get("title")
+				myFilePath = str(myMedia2.xpath('Media/Part/@file'))[2:-2]
+				myMediaPaths.append(myFilePath)
+				Log.Debug("Media from database: '%s' with a path of : %s" %(title, myFilePath))
+				r.append(myFilePath)
+		return r
+	except:
+		Log.Critical("Detected an exception in scanArtistDB")
+		pass
+	Log.Debug("******* Ending scanArtistDB ***********")
+
 

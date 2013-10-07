@@ -7,10 +7,10 @@
 	},
 
 	{
-		"id":"VIDEO_EXTENSIONS",
+		"id":"VALID_EXTENSIONS",
 		"label":"Valid Media extentions to scan for",
 		"type":"text",
-		"default":".m4v, .3gp, .nsv, .ts, .ty, .strm, .rm, .rmvb, .m3u, .mov, .qt, .divx, .xvid, .bivx, .vob, .nrg, .img, .iso, .pva, .wmv, .asf, .asx, .ogm, .m2v, .avi, .bin, .dat, .dvr-ms, .mpg, .mpeg, .mp4, .mkv, .avc, .vp3, .svq3, .nuv, .viv, .dv, .fli, .flv, .rar, .001, .wpl, .zip, .jpg"
+		"default":".m4v, .3gp, .nsv, .ts, .ty, .strm, .rm, .rmvb, .m3u, .mov, .qt, .divx, .xvid, .bivx, .vob, .nrg, .img, .iso, .pva, .wmv, .asf, .asx, .ogm, .m2v, .avi, .bin, .dat, .dvr-ms, .mpg, .mpeg, .mp4, .mkv, .avc, .vp3, .svq3, .nuv, .viv, .dv, .fli, .flv, .rar, .001, .wpl, .zip, .jpg, .mp3"
 	},
 
 	{
