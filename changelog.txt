@@ -1,3 +1,7 @@
+V0.0.1.2:
+
+Fixed issue with result showing multiple times
+
 V0.0.1.1:
 
 Fixed multipath in sections

@@ -45,6 +45,9 @@ def MainMenu():
 	Log.Debug("**********  Starting MainMenu  **********")
 	oc = ObjectContainer(no_cache=True)	
 	try:
+		#Clear our global varialble
+		myPathList[0][:] = []
+		myPathList[1][:] = []
 		sections = XML.ElementFromURL(PMS_URL).xpath('//Directory')	
 		for section in sections:			
 			title = section.get('title')
@@ -95,12 +98,11 @@ def confirmScan(title, key, sectiontype):
 			files.append(listTree(myPathList[1][i]))
 	Log.Debug("Files found are the following:")
 	Log.Debug(files)
-
 	missing = findUnmatchedFiles(files, myMediaPaths)
 	Log.Info("*********************** The END RESULT Start *****************")
-	Log.Info(" The following files are missing in the Plex Database!:")
+	Log.Info("The following files are missing in Plex database from section named: %s:" %(title))
 	print("*********************** The END RESULT Start *****************")
-	print("The following files are missing in Plex database!:")
+	print("The following files are missing in Plex database from section named: %s:" %(title))
 	print(len(missing))
 	if 0 == len(missing):
 		Log.Info("All is good....no files are missing")
