@@ -1,3 +1,8 @@
+V0.0.1.1:
+
+Fixed multipath in sections
+Fixed problem with movie sections vs. TV-Series sectiom
+
 V0.0.1.0:
 
 Modulized a bit more
