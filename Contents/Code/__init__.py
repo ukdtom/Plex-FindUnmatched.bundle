@@ -3,11 +3,11 @@
 #
 #	Made by dane22....A Plex Community member
 #
-#	Original python code was made by a Plex community member named macr0t0r
+#	Original python code was made by a Plex community member named whymse
 #	and can be found here: 
 #	http://forums.plexapp.com/index.php/topic/39712-list-unmatched-media/?p=252267
 #	
-#	The origen idea to the code belongs to macr0t0r
+#	The origen idea to the code belongs to whymse
 #
 #	I just made it a little bit more user friendly
 #
@@ -61,7 +61,7 @@ def MainMenu():
 				myPathList[1].append(path)
 			oc.add(DirectoryObject(key=Callback(confirmScan, title=title, sectiontype=sectiontype, key=key), title='Look in section "' + title + '"'))	
 	except:
-		Log.Debug("Exception happend in MainMenu")
+		Log.Critical("Exception happend in MainMenu")
 		pass
 	oc.add(PrefsObject(title='Preferences', thumb=R('icon-prefs.png')))
 	Log.Debug("**********  Ending MainMenu  **********")
@@ -108,18 +108,16 @@ def confirmScan(title, key, sectiontype):
 	print("The following files are missing in Plex database from section named: %s:" %(title))
 	print(len(missing))
 	if 0 == len(missing):
-		Log.Info("All is good....no files are missing")
-		print("All is good....no files are missing")
-	else:
-		Log.Info(missing)
-		print(missing)
+		missing.append("All is good....no files are missing")
+	Log.Info(missing)
+	print(missing)
 	Log.Info("*********************** The END RESULT End *****************")
 	print("*********************** The END RESULT End *****************")
-
-
 	Log.Debug("*******  Ending confirmScan  ***********")
-#	return oc, filePaths
-	return oc
+	oc2 = ObjectContainer(title1="Unmatched Items found", mixed_parents=True)
+	for missed in missing:
+		oc2.add(DirectoryObject(key=Callback(confirmScan), title=missed))
+	return oc2
 
 ####################################################################################################
 # Do the files
