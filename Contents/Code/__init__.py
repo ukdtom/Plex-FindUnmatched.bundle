@@ -104,15 +104,11 @@ def confirmScan(title, key, sectiontype):
 	missing = findUnmatchedFiles(files, myMediaPaths)
 	Log.Info("*********************** The END RESULT Start *****************")
 	Log.Info("The following files are missing in Plex database from section named: %s:" %(title))
-	print("*********************** The END RESULT Start *****************")
-	print("The following files are missing in Plex database from section named: %s:" %(title))
-	print(len(missing))
 	if 0 == len(missing):
 		missing.append("All is good....no files are missing")
 	Log.Info(missing)
 	print(missing)
 	Log.Info("*********************** The END RESULT End *****************")
-	print("*********************** The END RESULT End *****************")
 	Log.Debug("*******  Ending confirmScan  ***********")
 	oc2 = ObjectContainer(title1="Unmatched Items found", mixed_parents=True)
 	for missed in missing:
@@ -254,10 +250,11 @@ def scanShowDB(myMediaURL, myMediaPaths=list()):
 			myMedias2 = XML.ElementFromURL(myURL).xpath('//Video')
 			for myMedia2 in myMedias2:
 				title = myMedia2.get("grandparentTitle") + "/" + myMedia2.get("title")
-				myFilePath = str(myMedia2.xpath('Media/Part/@file'))[2:-2]
-				myMediaPaths.append(myFilePath)
-				Log.Debug("Media from database: '%s' with a path of : %s" %(title, myFilePath))
-				r.append(myFilePath)
+				myFilePath = myMedia2.xpath('Media/Part/@file')
+				for myFilePath2 in myFilePath:
+					myMediaPaths.append(myFilePath2)					
+					Log.Debug("Media from database: '%s' with a path of : %s" %(title, myFilePath2))
+					r.append(myFilePath2)
 		return r
 	except:
 		Log.Critical("Detected an exception in scanShowDB")
