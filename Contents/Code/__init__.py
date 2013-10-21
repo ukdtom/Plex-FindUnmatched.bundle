@@ -40,7 +40,6 @@ def Start():
 	getPrefs()
 	print("Started %s" %(NAME))
 	print("Remember check dual path for section")
-	print("Fix Music section Unicode")
 
 ####################################################################################################
 # Main menu
@@ -49,8 +48,6 @@ def Start():
 def MainMenu():
 	Log.Debug("**********  Starting MainMenu  **********")
 	oc = ObjectContainer(no_cache=True)	
-	foundMissing = {}
-	foundFiles = {}
 	try:
 		sections = XML.ElementFromURL(PMS_URL).xpath('//Directory')	
 		for section in sections:			
@@ -78,6 +75,8 @@ def confirmScan(title, key, sectiontype):
 	Log.Debug("*******  Starting confirmScan  ***********")
 	files = []
 	files[:] = []
+	foundMissing.clear()
+	foundFiles.clear()
 	Log.Debug("Section type is %s" %(sectiontype))
 	oc = ObjectContainer(title2="Search")
 	myMediaURL = PMS_URL + key + "/all"		
@@ -110,7 +109,7 @@ def confirmScan(title, key, sectiontype):
 	title = "%d Unmatched Items found" %(len(foundMissing))
 	oc2 = ObjectContainer(title1=title, mixed_parents=True)
 	for item in foundMissing:
-		oc2.add(DirectoryObject(key=Callback(confirmScan), title=foundMissing[item].encode('utf-8','ignore')))
+		oc2.add(DirectoryObject(key=Callback(confirmScan), title=foundMissing[item].decode('utf-8','ignore')))
 	return oc2
 
 ####################################################################################################
@@ -276,8 +275,9 @@ def scanArtistDB(myMediaURL, myMediaPaths=list()):
 			for myMedia2 in myMedias2:
 				title = myMedia2.get("grandparentTitle") + "/" + myMedia2.get("title")
 				myFilePath = str(myMedia2.xpath('Media/Part/@file'))[2:-2]
-				myMediaPaths.append(myFilePath)
-				Log.Debug("Media from database: '%s' with a path of : %s" %(title, myFilePath))
+				myFilePath2 = urllib.quote(myFilePath).replace('%25', '%')
+				myMediaPaths.append(myFilePath2)
+				Log.Debug("Media from database: '%s' with a path of : %s" %(title, myFilePath2))
 				r.append(myFilePath)
 		return r
 	except:
