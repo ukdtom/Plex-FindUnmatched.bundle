@@ -1,3 +1,7 @@
+V0.0.1.5:
+
+Unicode enabled, or tried to, for sections as well as filenames for movie and series
+
 V0.0.1.4:
 
 Added first attempt of a gui presentation of the end result
