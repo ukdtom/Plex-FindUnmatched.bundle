@@ -1,5 +1,10 @@
 V0.0.1.5:
 
+Added Unicode to Music sections
+Fixed an issue with detection of TV-Shows
+
+V0.0.1.5:
+
 Unicode enabled, or tried to, for sections as well as filenames for movie and series
 
 V0.0.1.4:
