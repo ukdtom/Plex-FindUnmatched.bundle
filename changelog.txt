@@ -1,4 +1,14 @@
-V0.0.1.5:
+V0.0.1.7:
+As a partial workaround for a channel timeout of the API, when scanning a HUGE section, I devided the search into 3 different steps.
+Still not perfect, and will still timeout for some people, but as said, only with either a HUGE section, a non-optimized database or a slow file-system.
+I'm still scratching my head here on how-to solve this, but haven't given up yet.
+
+Fixed errors with strange caracters
+Fixed issue when running on windows @ the same time...
+(Looks like Unicode, that I hate, is also my friend here)
+
+
+V0.0.1.6:
 
 Added Unicode to Music sections
 Fixed an issue with detection of TV-Shows

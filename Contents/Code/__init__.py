@@ -23,9 +23,10 @@ ART = 'art-default.jpg'
 ICON = 'icon-FindUnmatched.png'
 PREFIX = '/applications/findUnmatched'
 
-myPathList = {}
-foundMissing = {}
-foundFiles = {}
+myPathList = {}			# Contains dict of section keys and file-path
+files = []			# Contains list of detected medias from the filesystem of a section
+myMediaPaths = []		# Contains filepath of selected section medias from the database
+myResults = []			# Contains the end results
 
 ####################################################################################################
 # Start function
@@ -47,19 +48,23 @@ def Start():
 @handler(PREFIX, NAME, thumb=ICON, art=ART)
 def MainMenu():
 	Log.Debug("**********  Starting MainMenu  **********")
-	oc = ObjectContainer(no_cache=True)	
+	oc = ObjectContainer(no_cache=True)
+	#Use global variables due to my lack of Python skills....SNIFF...
+	global myPathList
+	# Clear the myPathList
+	myPathList.clear
 	try:
-		sections = XML.ElementFromURL(PMS_URL).xpath('//Directory')	
-		for section in sections:			
+		sections = XML.ElementFromURL(PMS_URL).xpath('//Directory')
+		for section in sections:
 			title = section.get('title')
 			key = section.get('key')
 			sectiontype = section.get('type')
-			paths = section.xpath('Location/@path')				
-			Log.Debug("Title of section is %s with a key of %s and a path of : %s" %(title, key, paths))	
+			paths = section.xpath('Location/@path')
+			Log.Debug("Title of section is %s with a key of %s and a path of : %s" %(title, key, paths))
 			for path in paths:
 				# Need to append the key and path to a global variable, in order to avoid a bug in Plex API
 				myPathList[key]=path
-			oc.add(DirectoryObject(key=Callback(confirmScan, title=title, sectiontype=sectiontype, key=key), title='Look in section "' + title + '"'))	
+			oc.add(DirectoryObject(key=Callback(scanDB, title=title, sectiontype=sectiontype, key=key), title='Look in section "' + title + '"'))	
 	except:
 		Log.Critical("Exception happend in MainMenu")
 		pass
@@ -68,86 +73,129 @@ def MainMenu():
 	return oc
 
 ####################################################################################################
-# Grab user selection of a section, and get to work
+# Grab user selection of a section, and scan the database
 ####################################################################################################
-@route(PREFIX + '/confirmScan')
-def confirmScan(title, key, sectiontype):
-	Log.Debug("*******  Starting confirmScan  ***********")
-	files = []
-	files[:] = []
-	foundMissing.clear()
-	foundFiles.clear()
-	Log.Debug("Section type is %s" %(sectiontype))
-	oc = ObjectContainer(title2="Search")
-	myMediaURL = PMS_URL + key + "/all"		
-	myMediaPaths = []
-	Log.Debug("Path to medias in section is %s" %(myMediaURL))
-	# Scan the database based on the type of section
-	if sectiontype == "movie":
-		myMediaPaths = scanMovieDB(myMediaURL)
-	if sectiontype == "show":
-		myMediaPaths = scanShowDB(myMediaURL)
-	if sectiontype == "artist":
-		myMediaPaths = scanArtistDB(myMediaURL)
-	Log.Debug("Section filepath as stored in the database are: %s" %(myMediaPaths))
-	# Now we need all filepaths added to the section
-	for myKey in myPathList.keys():
-		if key == myKey:
-			files.append(listTree(myPathList[key]))
-	Log.Debug("Files found are the following:")
-	Log.Debug(files)
-	findUnmatchedFiles(files, myMediaPaths)
+@route(PREFIX + '/scanDB')
+def scanDB(title, key, sectiontype):
+	Log.Debug("*******  Starting scanDB  ***********")
+	global myMediaPaths
+	global myPathList
+	try:
+		Log.Debug("Section type is %s" %(sectiontype))
+		myMediaURL = PMS_URL + key + "/all"		
+		Log.Debug("Path to medias in section is %s" %(myMediaURL))
+		# Scan the database based on the type of section
+		if sectiontype == "movie":
+			scanMovieDB(myMediaURL)
+		if sectiontype == "show":
+			scanShowDB(myMediaURL)
+		if sectiontype == "artist":
+			scanArtistDB(myMediaURL)
+		Log.Debug("Section filepath as stored in the database are: %s" %(myMediaPaths))	
+		oc2 = ObjectContainer(title1="Database scanned", mixed_parents=True)
+		oc2.add(DirectoryObject(key=Callback(scanFiles, title=title, sectiontype=sectiontype, key=key), title="****** Click here to scan the file-system ******"))
+	except:
+		Log.Critical("Exception happend in scanDB")
+		pass
+	return oc2
 
+####################################################################################################
+# Scan Filesystem for a section
+####################################################################################################
+@route(PREFIX + '/scanFiles')
+def scanFiles(title, key, sectiontype):
+	Log.Debug("*******  Starting scanFiles  ***********")	
+	global myPathList
+	global files
+	try:
+		files[:] = []
+		Log.Debug("Section type is %s" %(sectiontype))
+		oc = ObjectContainer(title2="Search FileSystem")
+		myMediaURL = PMS_URL + key + "/all"		
+		# Now we need all filepaths added to the section
+		for myKey in myPathList.keys():
+			if key == myKey:
+				files.append(listTree(myPathList[key]))
+		Log.Debug("Files found are the following:")
+		Log.Debug(files)
+		oc2 = ObjectContainer(title1="FileSystem scanned", mixed_parents=True)
+		oc2.add(DirectoryObject(key=Callback(compare, title=title), title="****** Click here to compare ******"))
+	except:
+		Log.Critical("Exception happend in scanDB")
+		pass
+	return oc2
+
+####################################################################################################
+# Find missing files
+####################################################################################################
+@route(PREFIX + '/compare')
+def compare(title):
+	Log.Debug("*******  Starting compare  ***********")
+	global myMediaPaths
+	global files
+	findUnmatchedFiles()
 	Log.Info("*********************** The END RESULT Start *****************")
-	Log.Info("****** Found %d Items missing **************" %(len(foundMissing)))
+	Log.Info("****** Found %d Items missing **************" %(len(myResults)))
 	Log.Info("The following files are missing in Plex database from section named: %s:" %(title))
-	if len(foundMissing) == 0:
-		foundMissing[0] = "All is good....no files are missing"
-	Log.Info(foundMissing)
+	if len(myResults) == 0:
+		myResults.append("All is good....no files are missing")
+	Log.Info(myResults)
 	Log.Info("*********************** The END RESULT End *****************")
 	Log.Debug("*******  Ending confirmScan  ***********")
-	title = "%d Unmatched Items found" %(len(foundMissing))
+	foundNo = len(myResults)
+	if foundNo == 1:
+		if "All is good....no files are missing" in myResults:
+			foundNo = 0	
+	title = ("%d Unmatched Items found" %(foundNo))
 	oc2 = ObjectContainer(title1=title, mixed_parents=True)
-	for item in foundMissing:
-		oc2.add(DirectoryObject(key=Callback(confirmScan), title=foundMissing[item].decode('utf-8','ignore')))
+	global myResults
+	for item in myResults:
+		oc2.add(DirectoryObject(key=Callback(MainMenu), title=item.decode('utf-8','ignore')))
 	return oc2
 
 ####################################################################################################
 # Do the files
 ####################################################################################################
 @route(PREFIX + '/findUnmatchedFiles')
-def findUnmatchedFiles(filePaths, dbPaths):
+def findUnmatchedFiles():
 	fname = ""
 	display_ignores = False
 
+	global files
+	global myMediaPaths
+	global myResults
+
+	myResults[:] = []
+
 	Log.Debug("******* Start findUnmatchedFiles ******")
-	Log.Debug("***********************************************************************************")
-	Log.Debug("Database paths:")
-	Log.Debug(dbPaths)
-	Log.Debug("***********************************************************************************")
-	for myFiles in filePaths:
-		for filePath in myFiles:
-			Log.Debug("Handling file %s" %filePath.decode("utf-8"))
-			if filePath not in dbPaths:
-				myext = os.path.splitext(filePath)[1].lower()
-				cext = myext.rstrip("']")
-				fname = os.path.split(filePath)[1]
-				if (fname in OK_FILES):
-					#Don't do anything for acceptable files
-					Log.Debug("File is part of OK_Files")
+	Log.Debug("*********************** Database paths: *******************************************")
+	Log.Debug(myMediaPaths)
+	Log.Debug("*********************** FileSystem Paths: *****************************************")
+	files = str(files)[2:-2].replace("'", "").split(', ')
+	Log.Debug(files)
+	for filePath in files:
+		Log.Debug("Handling file %s" %filePath.decode("utf-8"))
+		if filePath not in myMediaPaths:
+			myext = os.path.splitext(filePath)[1].lower()
+			cext = myext.rstrip("']")
+			fname = os.path.split(filePath)[1]
+			if (fname in OK_FILES):
+				#Don't do anything for acceptable files
+				Log.Debug("File is part of OK_Files")
+				continue
+			elif (cext in OTHER_EXTENSIONS):
+				#ignore images and subtitles
+				Log.Debug("File is part of ignored extentions")
+				continue
+			elif (cext not in VALID_EXTENSIONS):
+				#these shouldn't be here
+				if (display_ignores):
+					Log.Debug("Ignoring %s" %(filePath))
 					continue
-				elif (cext in OTHER_EXTENSIONS):
-					#ignore images and subtitles
-					Log.Debug("File is part of ignored extentions")
-					continue
-				elif (cext not in VALID_EXTENSIONS):
-					#these shouldn't be here
-					if (display_ignores):
-						Log.Debug("Ignoring %s" %(filePath))
-						continue
-				else:
-					Log.Debug("Missing this file")
-					foundMissing[filePath]=foundFiles[filePath]
+			else:
+				Log.Debug("Missing this file")
+				myResults.append((urllib.unquote(filePath))[:-1])
+
 	return 
 
 ####################################################################################################
@@ -195,7 +243,6 @@ def listTree(top, files=list()):
 			if os.path.isdir(pathname):
 				r = listTree(pathname, r)
 			elif os.path.isfile(pathname):
-				foundFiles[urllib.quote(pathname.encode('utf8'))]=pathname
 				r.append(urllib.quote(pathname.encode('utf8')))					
 			else:
 				Log.Debug("Skipping %s" %(pathname))
@@ -207,9 +254,10 @@ def listTree(top, files=list()):
 # This function will scan a movie section for filepaths in medias
 ####################################################################################################
 @route(PREFIX + '/scanMovieDB')
-def scanMovieDB(myMediaURL, myMediaPaths=list()):
+def scanMovieDB(myMediaURL):
 	Log.Debug("******* Starting scanMovieDB with an URL of %s***********" %(myMediaURL))
-	r = myMediaPaths[:]
+	global myMediaPaths
+	myMediaPaths[:] = []
 	try:
 		myMedias = XML.ElementFromURL(myMediaURL).xpath('//Video')
 		for myMedia in myMedias:
@@ -218,21 +266,20 @@ def scanMovieDB(myMediaURL, myMediaPaths=list()):
 			myFilePath = urllib.quote(myFilePath).replace('%25', '%')			
 			myMediaPaths.append(myFilePath)
 			Log.Debug("Media from database: '%s' with a path of : %s" %(title, myFilePath))
-			r.append(myFilePath)
-		return r
+			myMediaPaths.append(myFilePath)
+		return
 	except:
 		Log.Critical("Detected an exception in scanMovieDB")
 		pass
-
 
 ####################################################################################################
 # This function will scan a TV-Show section for filepaths in medias
 ####################################################################################################
 @route(PREFIX + '/scanShowDB')
-def scanShowDB(myMediaURL, myMediaPaths=list()):
+def scanShowDB(myMediaURL):
 	Log.Debug("******* Starting scanShowDB with an URL of %s***********" %(myMediaURL))
-	r = myMediaPaths[:]
-	Log.Debug("Host is %s" %(host))
+	global myMediaPaths
+	myMediaPaths[:] = []
 	try:
 		myMedias = XML.ElementFromURL(myMediaURL).xpath('//Directory')
 		for myMedia in myMedias:
@@ -248,8 +295,7 @@ def scanShowDB(myMediaURL, myMediaPaths=list()):
 					myFilePath2 = urllib.quote(myFilePath2).replace('%25', '%')
 					myMediaPaths.append(myFilePath2)					
 					Log.Debug("Media from database: '%s' with a path of : %s" %(title, myFilePath2))
-					r.append(myFilePath2)
-		return r
+		return
 	except:
 		Log.Critical("Detected an exception in scanShowDB")
 		pass
@@ -260,10 +306,10 @@ def scanShowDB(myMediaURL, myMediaPaths=list()):
 # This function will scan a Music section for filepaths in medias
 ####################################################################################################
 @route(PREFIX + '/scanArtistDB')
-def scanArtistDB(myMediaURL, myMediaPaths=list()):
+def scanArtistDB(myMediaURL):
 	Log.Debug("******* Starting scanArtistDB with an URL of %s***********" %(myMediaURL))
-	r = myMediaPaths[:]
-	Log.Debug("Host is %s" %(host))
+	global myMediaPaths
+	myMediaPaths[:] = []
 	try:
 		myMedias = XML.ElementFromURL(myMediaURL).xpath('//Directory')
 		for myMedia in myMedias:
@@ -278,10 +324,10 @@ def scanArtistDB(myMediaURL, myMediaPaths=list()):
 				myFilePath2 = urllib.quote(myFilePath).replace('%25', '%')
 				myMediaPaths.append(myFilePath2)
 				Log.Debug("Media from database: '%s' with a path of : %s" %(title, myFilePath2))
-				r.append(myFilePath)
-		return r
+		return
 	except:
 		Log.Critical("Detected an exception in scanArtistDB")
 		pass
 	Log.Debug("******* Ending scanArtistDB ***********")
+
 
