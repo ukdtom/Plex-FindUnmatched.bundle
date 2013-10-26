@@ -1,4 +1,9 @@
+V0.0.1.8:
+
+Fixed a brainfart from my part, cutting off the last caracter in the html reporting
+
 V0.0.1.7:
+
 As a partial workaround for a channel timeout of the API, when scanning a HUGE section, I devided the search into 3 different steps.
 Still not perfect, and will still timeout for some people, but as said, only with either a HUGE section, a non-optimized database or a slow file-system.
 I'm still scratching my head here on how-to solve this, but haven't given up yet.
