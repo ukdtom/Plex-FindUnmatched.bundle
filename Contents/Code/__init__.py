@@ -194,7 +194,7 @@ def findUnmatchedFiles():
 					continue
 			else:
 				Log.Debug("Missing this file")
-				myResults.append((urllib.unquote(filePath))[:-1])
+				myResults.append(urllib.unquote(filePath))
 
 	return 
 
