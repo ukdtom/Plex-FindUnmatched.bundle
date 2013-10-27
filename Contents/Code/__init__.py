@@ -18,7 +18,7 @@ import unicodedata
 import string
 import urllib
 
-VERSION = ' V0.0.1.9'
+VERSION = ' V0.0.1.10'
 NAME = 'FindUnmatched'
 ART = 'art-default.jpg'
 ICON = 'icon-FindUnmatched.png'
@@ -42,8 +42,6 @@ def Start():
 	DirectoryObject.thumb = R(ICON)
 	HTTP.CacheTime = 0
 	getPrefs()
-	print("Remember check dual path for section")
-
 
 ####################################################################################################
 # Main menu
@@ -65,9 +63,7 @@ def MainMenu():
 			sectiontype = section.get('type')
 			paths = section.xpath('Location/@path')
 			Log.Debug("Title of section is %s with a key of %s and a path of : %s" %(title, key, paths))
-			for path in paths:
-				# Need to append the key and path to a global variable, in order to avoid a bug in Plex API
-				myPathList[key]=path
+			myPathList[key]= ', '.join(paths)
 			oc.add(DirectoryObject(key=Callback(scanDB, title=title, sectiontype=sectiontype, key=key), title='Look in section "' + title + '"'))	
 	except:
 		Log.Critical("Exception happend in MainMenu")
@@ -83,7 +79,7 @@ def MainMenu():
 def scanDB(title, key, sectiontype):
 	Log.Debug("*******  Starting scanDB  ***********")
 	global myMediaPaths
-	global myPathList
+	global myPathList	
 	try:
 		Log.Debug("Section type is %s" %(sectiontype))
 		myMediaURL = PMS_URL + key + "/all"		
@@ -111,21 +107,25 @@ def scanFiles(title, key, sectiontype):
 	Log.Debug("*******  Starting scanFiles  ***********")	
 	global myPathList
 	global files
-	try:
+	try:		
 		files[:] = []
 		Log.Debug("Section type is %s" %(sectiontype))
 		oc = ObjectContainer(title2="Search FileSystem")
 		myMediaURL = PMS_URL + key + "/all"		
 		# Now we need all filepaths added to the section
 		for myKey in myPathList.keys():
+			Log.Debug("Tommy1 key %s" %(myKey))
+			Log.Debug("Tommy2 %s" %(myPathList[myKey]))
 			if key == myKey:
-				files.append(listTree(myPathList[key]))
+				myPaths = myPathList[key].split(', ')
+				for myPath in myPaths:
+					files.append(listTree(myPath))
 		Log.Debug("********  Files found are the following: ***************")
 		Log.Debug(files)
 		oc2 = ObjectContainer(title1="FileSystem scanned", mixed_parents=True)
 		oc2.add(DirectoryObject(key=Callback(compare, title=title), title="****** Click here to compare ******"))
 	except:
-		Log.Critical("Exception happend in scanDB")
+		Log.Critical("Exception happend in scanFiles")
 		pass
 	return oc2
 
@@ -154,7 +154,12 @@ def compare(title):
 	oc2 = ObjectContainer(title1=title, mixed_parents=True)
 	global myResults
 	for item in myResults:
-		oc2.add(DirectoryObject(key=Callback(MainMenu), title=item.decode('utf-8','ignore')))
+		title=item.decode('utf-8','ignore')
+		if title[0] == '[':
+			title = title[1:]
+		if title[len(title)-1] == ']':
+			title = title[:-1]
+		oc2.add(DirectoryObject(key=Callback(MainMenu), title=title))
 	return oc2
 
 ####################################################################################################

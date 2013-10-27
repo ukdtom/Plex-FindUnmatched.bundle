@@ -1,3 +1,7 @@
+V0.0.1.10:
+
+Fixed issue where a section was spawning more than one file-path
+
 V0.0.1.9:
 
 Added versionnumber to both Logfile as well as GUI
