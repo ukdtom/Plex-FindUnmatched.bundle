@@ -18,6 +18,7 @@ import unicodedata
 import string
 import urllib
 
+VERSION = ' V0.0.1.9'
 NAME = 'FindUnmatched'
 ART = 'art-default.jpg'
 ICON = 'icon-FindUnmatched.png'
@@ -32,20 +33,23 @@ myResults = []			# Contains the end results
 # Start function
 ####################################################################################################
 def Start():
+	print("********  Started %s on %s  **********" %(NAME  + VERSION, Platform.OS))
+	Log.Debug("*******  Started %s on %s  ***********" %(NAME  + VERSION, Platform.OS))
 	Plugin.AddViewGroup('List', viewMode='List', mediaType='items')
 	ObjectContainer.art = R(ART)
-	ObjectContainer.title1 = NAME
+	ObjectContainer.title1 = NAME  + VERSION
 	ObjectContainer.view_group = 'List'
 	DirectoryObject.thumb = R(ICON)
 	HTTP.CacheTime = 0
 	getPrefs()
-	print("Started %s" %(NAME))
 	print("Remember check dual path for section")
+
 
 ####################################################################################################
 # Main menu
 ####################################################################################################
 @handler(PREFIX, NAME, thumb=ICON, art=ART)
+@route(PREFIX + '/MainMenu')
 def MainMenu():
 	Log.Debug("**********  Starting MainMenu  **********")
 	oc = ObjectContainer(no_cache=True)
@@ -91,7 +95,7 @@ def scanDB(title, key, sectiontype):
 			scanShowDB(myMediaURL)
 		if sectiontype == "artist":
 			scanArtistDB(myMediaURL)
-		Log.Debug("Section filepath as stored in the database are: %s" %(myMediaPaths))	
+		Log.Debug("**********  Section filepath as stored in the database are: %s  *************" %(myMediaPaths))	
 		oc2 = ObjectContainer(title1="Database scanned", mixed_parents=True)
 		oc2.add(DirectoryObject(key=Callback(scanFiles, title=title, sectiontype=sectiontype, key=key), title="****** Click here to scan the file-system ******"))
 	except:
@@ -116,7 +120,7 @@ def scanFiles(title, key, sectiontype):
 		for myKey in myPathList.keys():
 			if key == myKey:
 				files.append(listTree(myPathList[key]))
-		Log.Debug("Files found are the following:")
+		Log.Debug("********  Files found are the following: ***************")
 		Log.Debug(files)
 		oc2 = ObjectContainer(title1="FileSystem scanned", mixed_parents=True)
 		oc2.add(DirectoryObject(key=Callback(compare, title=title), title="****** Click here to compare ******"))
@@ -263,7 +267,10 @@ def scanMovieDB(myMediaURL):
 		for myMedia in myMedias:
 			title = myMedia.get('title')
 			myFilePath = str(myMedia.xpath('Media/Part/@file'))[2:-2]
-			myFilePath = urllib.quote(myFilePath).replace('%25', '%')			
+			myFilePath = urllib.quote(myFilePath).replace('%25', '%')	
+			# Remove esc backslash if present and on Windows
+			if Platform.OS == "Windows":
+				myFilePath = myFilePath.replace('%5C%5C', '%5C')
 			myMediaPaths.append(myFilePath)
 			Log.Debug("Media from database: '%s' with a path of : %s" %(title, myFilePath))
 			myMediaPaths.append(myFilePath)
@@ -293,6 +300,9 @@ def scanShowDB(myMediaURL):
 				myFilePath = myMedia2.xpath('Media/Part/@file')
 				for myFilePath2 in myFilePath:
 					myFilePath2 = urllib.quote(myFilePath2).replace('%25', '%')
+					# Remove esc backslash if present and on Windows
+					if Platform.OS == "Windows":
+						myFilePath2 = myFilePath2.replace('%5C%5C', '%5C')
 					myMediaPaths.append(myFilePath2)					
 					Log.Debug("Media from database: '%s' with a path of : %s" %(title, myFilePath2))
 		return
@@ -322,6 +332,9 @@ def scanArtistDB(myMediaURL):
 				title = myMedia2.get("grandparentTitle") + "/" + myMedia2.get("title")
 				myFilePath = str(myMedia2.xpath('Media/Part/@file'))[2:-2]
 				myFilePath2 = urllib.quote(myFilePath).replace('%25', '%')
+				# Remove esc backslash if present and on Windows
+				if Platform.OS == "Windows":
+					myFilePath2 = myFilePath2.replace('%5C%5C', '%5C')
 				myMediaPaths.append(myFilePath2)
 				Log.Debug("Media from database: '%s' with a path of : %s" %(title, myFilePath2))
 		return
