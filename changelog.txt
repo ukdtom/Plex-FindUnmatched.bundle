@@ -1,3 +1,9 @@
+V0.0.1.9:
+
+Added versionnumber to both Logfile as well as GUI
+Added platform to logging
+fixed backslash getting escaped on windows platform
+
 V0.0.1.8:
 
 Fixed a brainfart from my part, cutting off the last caracter in the html reporting
