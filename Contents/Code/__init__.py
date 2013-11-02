@@ -18,7 +18,7 @@ import unicodedata
 import string
 import urllib
 
-VERSION = ' V0.0.1.10'
+VERSION = ' V0.0.1.11'
 NAME = 'FindUnmatched'
 ART = 'art-default.jpg'
 ICON = 'icon-FindUnmatched.png'
@@ -114,8 +114,6 @@ def scanFiles(title, key, sectiontype):
 		myMediaURL = PMS_URL + key + "/all"		
 		# Now we need all filepaths added to the section
 		for myKey in myPathList.keys():
-			Log.Debug("Tommy1 key %s" %(myKey))
-			Log.Debug("Tommy2 %s" %(myPathList[myKey]))
 			if key == myKey:
 				myPaths = myPathList[key].split(', ')
 				for myPath in myPaths:
@@ -169,13 +167,10 @@ def compare(title):
 def findUnmatchedFiles():
 	fname = ""
 	display_ignores = False
-
 	global files
 	global myMediaPaths
 	global myResults
-
 	myResults[:] = []
-
 	Log.Debug("******* Start findUnmatchedFiles ******")
 	Log.Debug("*********************** Database paths: *******************************************")
 	Log.Debug(myMediaPaths)
@@ -204,7 +199,6 @@ def findUnmatchedFiles():
 			else:
 				Log.Debug("Missing this file")
 				myResults.append(urllib.unquote(filePath))
-
 	return 
 
 ####################################################################################################
@@ -252,7 +246,10 @@ def listTree(top, files=list()):
 			if os.path.isdir(pathname):
 				r = listTree(pathname, r)
 			elif os.path.isfile(pathname):
-				r.append(urllib.quote(pathname.encode('utf8')))					
+				filename = urllib.unquote(pathname).decode('utf8')
+				composed_filename = unicodedata.normalize('NFKC', filename)
+				filename = urllib.quote(composed_filename.encode('utf8'))	
+				r.append(filename)
 			else:
 				Log.Debug("Skipping %s" %(pathname))
 		return r
@@ -272,11 +269,9 @@ def scanMovieDB(myMediaURL):
 		for myMedia in myMedias:
 			title = myMedia.get('title')
 			myFilePath = str(myMedia.xpath('Media/Part/@file'))[2:-2]
-			myFilePath = urllib.quote(myFilePath).replace('%25', '%')	
-			# Remove esc backslash if present and on Windows
-			if Platform.OS == "Windows":
-				myFilePath = myFilePath.replace('%5C%5C', '%5C')
-			myMediaPaths.append(myFilePath)
+			filename = urllib.unquote(myFilePath).decode('utf8')
+			composed_filename = unicodedata.normalize('NFKC', filename)
+			myFilePath = urllib.quote(composed_filename.encode('utf8'))
 			Log.Debug("Media from database: '%s' with a path of : %s" %(title, myFilePath))
 			myMediaPaths.append(myFilePath)
 		return
@@ -304,10 +299,9 @@ def scanShowDB(myMediaURL):
 				title = myMedia2.get("grandparentTitle") + "/" + myMedia2.get("title")
 				myFilePath = myMedia2.xpath('Media/Part/@file')
 				for myFilePath2 in myFilePath:
-					myFilePath2 = urllib.quote(myFilePath2).replace('%25', '%')
-					# Remove esc backslash if present and on Windows
-					if Platform.OS == "Windows":
-						myFilePath2 = myFilePath2.replace('%5C%5C', '%5C')
+					filename = urllib.unquote(myFilePath2).decode('utf8')
+					composed_filename = unicodedata.normalize('NFKC', filename)
+					myFilePath2 = urllib.quote(composed_filename.encode('utf8'))
 					myMediaPaths.append(myFilePath2)					
 					Log.Debug("Media from database: '%s' with a path of : %s" %(title, myFilePath2))
 		return
@@ -336,12 +330,11 @@ def scanArtistDB(myMediaURL):
 			for myMedia2 in myMedias2:
 				title = myMedia2.get("grandparentTitle") + "/" + myMedia2.get("title")
 				myFilePath = str(myMedia2.xpath('Media/Part/@file'))[2:-2]
-				myFilePath2 = urllib.quote(myFilePath).replace('%25', '%')
-				# Remove esc backslash if present and on Windows
-				if Platform.OS == "Windows":
-					myFilePath2 = myFilePath2.replace('%5C%5C', '%5C')
-				myMediaPaths.append(myFilePath2)
-				Log.Debug("Media from database: '%s' with a path of : %s" %(title, myFilePath2))
+				filename = urllib.unquote(myFilePath).decode('utf8')
+				composed_filename = unicodedata.normalize('NFKC', filename)
+				myFilePath = urllib.quote(composed_filename.encode('utf8'))
+				myMediaPaths.append(myFilePath)
+				Log.Debug("Media from database: '%s' with a path of : %s" %(title, myFilePath))
 		return
 	except:
 		Log.Critical("Detected an exception in scanArtistDB")
