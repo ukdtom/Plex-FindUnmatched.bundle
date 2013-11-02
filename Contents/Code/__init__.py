@@ -18,7 +18,7 @@ import unicodedata
 import string
 import urllib
 
-VERSION = ' V0.0.1.11'
+VERSION = ' V0.0.1.12'
 NAME = 'FindUnmatched'
 ART = 'art-default.jpg'
 ICON = 'icon-FindUnmatched.png'
@@ -272,6 +272,9 @@ def scanMovieDB(myMediaURL):
 			filename = urllib.unquote(myFilePath).decode('utf8')
 			composed_filename = unicodedata.normalize('NFKC', filename)
 			myFilePath = urllib.quote(composed_filename.encode('utf8'))
+			# Remove esc backslash if present and on Windows
+			if Platform.OS == "Windows":
+				myFilePath = myFilePath.replace('%5C%5C', '%5C')
 			Log.Debug("Media from database: '%s' with a path of : %s" %(title, myFilePath))
 			myMediaPaths.append(myFilePath)
 		return
@@ -302,6 +305,9 @@ def scanShowDB(myMediaURL):
 					filename = urllib.unquote(myFilePath2).decode('utf8')
 					composed_filename = unicodedata.normalize('NFKC', filename)
 					myFilePath2 = urllib.quote(composed_filename.encode('utf8'))
+					# Remove esc backslash if present and on Windows
+					if Platform.OS == "Windows":
+						myFilePath2 = myFilePath2.replace('%5C%5C', '%5C')
 					myMediaPaths.append(myFilePath2)					
 					Log.Debug("Media from database: '%s' with a path of : %s" %(title, myFilePath2))
 		return
@@ -333,6 +339,9 @@ def scanArtistDB(myMediaURL):
 				filename = urllib.unquote(myFilePath).decode('utf8')
 				composed_filename = unicodedata.normalize('NFKC', filename)
 				myFilePath = urllib.quote(composed_filename.encode('utf8'))
+				# Remove esc backslash if present and on Windows
+				if Platform.OS == "Windows":
+					myFilePath = myFilePath.replace('%5C%5C', '%5C')
 				myMediaPaths.append(myFilePath)
 				Log.Debug("Media from database: '%s' with a path of : %s" %(title, myFilePath))
 		return
