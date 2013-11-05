@@ -18,7 +18,7 @@ import unicodedata
 import string
 import urllib
 
-VERSION = ' V0.0.1.12'
+VERSION = ' V0.0.1.13'
 NAME = 'FindUnmatched'
 ART = 'art-default.jpg'
 ICON = 'icon-FindUnmatched.png'
@@ -58,13 +58,14 @@ def MainMenu():
 	try:
 		sections = XML.ElementFromURL(PMS_URL).xpath('//Directory')
 		for section in sections:
-			title = section.get('title')
-			key = section.get('key')
 			sectiontype = section.get('type')
-			paths = section.xpath('Location/@path')
-			Log.Debug("Title of section is %s with a key of %s and a path of : %s" %(title, key, paths))
-			myPathList[key]= ', '.join(paths)
-			oc.add(DirectoryObject(key=Callback(scanDB, title=title, sectiontype=sectiontype, key=key), title='Look in section "' + title + '"'))	
+			if sectiontype != "photo":			
+				title = section.get('title')
+				key = section.get('key')
+				paths = section.xpath('Location/@path')
+				Log.Debug("Title of section is %s with a key of %s and a path of : %s" %(title, key, paths))
+				myPathList[key]= ', '.join(paths)
+				oc.add(DirectoryObject(key=Callback(scanDB, title=title, sectiontype=sectiontype, key=key), title='Look in section "' + title + '"'))	
 	except:
 		Log.Critical("Exception happend in MainMenu")
 		pass
@@ -151,12 +152,15 @@ def compare(title):
 	title = ("%d Unmatched Items found" %(foundNo))
 	oc2 = ObjectContainer(title1=title, mixed_parents=True)
 	global myResults
+	counter = 1
 	for item in myResults:
 		title=item.decode('utf-8','ignore')
 		if title[0] == '[':
 			title = title[1:]
 		if title[len(title)-1] == ']':
 			title = title[:-1]
+		title = str(counter) + ": " + title
+		counter += 1
 		oc2.add(DirectoryObject(key=Callback(MainMenu), title=title))
 	return oc2
 
@@ -264,19 +268,21 @@ def scanMovieDB(myMediaURL):
 	Log.Debug("******* Starting scanMovieDB with an URL of %s***********" %(myMediaURL))
 	global myMediaPaths
 	myMediaPaths[:] = []
+	myTmpPath = []
 	try:
 		myMedias = XML.ElementFromURL(myMediaURL).xpath('//Video')
 		for myMedia in myMedias:
-			title = myMedia.get('title')
-			myFilePath = str(myMedia.xpath('Media/Part/@file'))[2:-2]
-			filename = urllib.unquote(myFilePath).decode('utf8')
-			composed_filename = unicodedata.normalize('NFKC', filename)
-			myFilePath = urllib.quote(composed_filename.encode('utf8'))
-			# Remove esc backslash if present and on Windows
-			if Platform.OS == "Windows":
-				myFilePath = myFilePath.replace('%5C%5C', '%5C')
-			Log.Debug("Media from database: '%s' with a path of : %s" %(title, myFilePath))
-			myMediaPaths.append(myFilePath)
+			title = myMedia.get('title')			
+			myTmpPaths = (','.join(myMedia.xpath('Media/Part/@file')).split(','))
+			for myTmpPath in myTmpPaths:
+				filename = urllib.unquote(myTmpPath).decode('utf8')
+				composed_filename = unicodedata.normalize('NFKC', filename)
+				myFilePath = urllib.quote(composed_filename.encode('utf8'))
+				# Remove esc backslash if present and on Windows
+				if Platform.OS == "Windows":
+					myFilePath = myFilePath.replace('%5C%5C', '%5C')
+				Log.Debug("Media from database: '%s' with a path of : %s" %(title, myFilePath))
+				myMediaPaths.append(myFilePath)
 		return
 	except:
 		Log.Critical("Detected an exception in scanMovieDB")
@@ -300,7 +306,7 @@ def scanShowDB(myMediaURL):
 			myMedias2 = XML.ElementFromURL(myURL).xpath('//Video')
 			for myMedia2 in myMedias2:
 				title = myMedia2.get("grandparentTitle") + "/" + myMedia2.get("title")
-				myFilePath = myMedia2.xpath('Media/Part/@file')
+				myFilePath = (','.join(myMedia2.xpath('Media/Part/@file')).split(','))
 				for myFilePath2 in myFilePath:
 					filename = urllib.unquote(myFilePath2).decode('utf8')
 					composed_filename = unicodedata.normalize('NFKC', filename)

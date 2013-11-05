@@ -1,3 +1,8 @@
+V0.0.1.13:
+
+Fixed problem, where a madia spawing more than one file, was detected as unmatched
+Optimized speed as well
+
 V0.0.1.12:
 
 Fixed a regression on windows with backslash vs. double backslash
