@@ -273,7 +273,7 @@ def scanMovieDB(myMediaURL):
 		myMedias = XML.ElementFromURL(myMediaURL).xpath('//Video')
 		for myMedia in myMedias:
 			title = myMedia.get('title')			
-			myTmpPaths = (','.join(myMedia.xpath('Media/Part/@file')).split(','))
+			myTmpPaths = (',,,'.join(myMedia.xpath('Media/Part/@file')).split(',,,'))
 			for myTmpPath in myTmpPaths:
 				filename = urllib.unquote(myTmpPath).decode('utf8')
 				composed_filename = unicodedata.normalize('NFKC', filename)
@@ -306,7 +306,7 @@ def scanShowDB(myMediaURL):
 			myMedias2 = XML.ElementFromURL(myURL).xpath('//Video')
 			for myMedia2 in myMedias2:
 				title = myMedia2.get("grandparentTitle") + "/" + myMedia2.get("title")
-				myFilePath = (','.join(myMedia2.xpath('Media/Part/@file')).split(','))
+				myFilePath = (',,,'.join(myMedia2.xpath('Media/Part/@file')).split(',,,'))
 				for myFilePath2 in myFilePath:
 					filename = urllib.unquote(myFilePath2).decode('utf8')
 					composed_filename = unicodedata.normalize('NFKC', filename)
