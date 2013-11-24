@@ -313,7 +313,7 @@ def scanShowDB(myMediaURL):
 					myFilePath2 = urllib.quote(composed_filename.encode('utf8'))
 					# Remove esc backslash if present and on Windows
 					if Platform.OS == "Windows":
-						myFilePath2 = myFilePath2.replace('%5C%5C', '%5C')
+						myFilePath2 = myFilePath2.replace(':%5C%5C', ':%5C')
 					myMediaPaths.append(myFilePath2)					
 					Log.Debug("Media from database: '%s' with a path of : %s" %(title, myFilePath2))
 		return
@@ -347,7 +347,7 @@ def scanArtistDB(myMediaURL):
 				myFilePath = urllib.quote(composed_filename.encode('utf8'))
 				# Remove esc backslash if present and on Windows
 				if Platform.OS == "Windows":
-					myFilePath = myFilePath.replace('%5C%5C', '%5C')
+					myFilePath = myFilePath.replace(':%5C%5C', ':%5C')
 				myMediaPaths.append(myFilePath)
 				Log.Debug("Media from database: '%s' with a path of : %s" %(title, myFilePath))
 		return
