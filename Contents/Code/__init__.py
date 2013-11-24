@@ -273,7 +273,7 @@ def scanMovieDB(myMediaURL):
 		myMedias = XML.ElementFromURL(myMediaURL).xpath('//Video')
 		for myMedia in myMedias:
 			title = myMedia.get('title')			
-			myTmpPaths = (','.join(myMedia.xpath('Media/Part/@file')).split(','))
+			myTmpPaths = (',,,'.join(myMedia.xpath('Media/Part/@file')).split(',,,'))
 			for myTmpPath in myTmpPaths:
 				filename = urllib.unquote(myTmpPath).decode('utf8')
 				composed_filename = unicodedata.normalize('NFKC', filename)
@@ -306,14 +306,14 @@ def scanShowDB(myMediaURL):
 			myMedias2 = XML.ElementFromURL(myURL).xpath('//Video')
 			for myMedia2 in myMedias2:
 				title = myMedia2.get("grandparentTitle") + "/" + myMedia2.get("title")
-				myFilePath = (','.join(myMedia2.xpath('Media/Part/@file')).split(','))
+				myFilePath = (',,,'.join(myMedia2.xpath('Media/Part/@file')).split(',,,'))
 				for myFilePath2 in myFilePath:
 					filename = urllib.unquote(myFilePath2).decode('utf8')
 					composed_filename = unicodedata.normalize('NFKC', filename)
 					myFilePath2 = urllib.quote(composed_filename.encode('utf8'))
 					# Remove esc backslash if present and on Windows
 					if Platform.OS == "Windows":
-						myFilePath2 = myFilePath2.replace('%5C%5C', '%5C')
+						myFilePath2 = myFilePath2.replace(':%5C%5C', ':%5C')
 					myMediaPaths.append(myFilePath2)					
 					Log.Debug("Media from database: '%s' with a path of : %s" %(title, myFilePath2))
 		return
@@ -347,7 +347,7 @@ def scanArtistDB(myMediaURL):
 				myFilePath = urllib.quote(composed_filename.encode('utf8'))
 				# Remove esc backslash if present and on Windows
 				if Platform.OS == "Windows":
-					myFilePath = myFilePath.replace('%5C%5C', '%5C')
+					myFilePath = myFilePath.replace(':%5C%5C', ':%5C')
 				myMediaPaths.append(myFilePath)
 				Log.Debug("Media from database: '%s' with a path of : %s" %(title, myFilePath))
 		return
