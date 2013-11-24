@@ -280,7 +280,7 @@ def scanMovieDB(myMediaURL):
 				myFilePath = urllib.quote(composed_filename.encode('utf8'))
 				# Remove esc backslash if present and on Windows
 				if Platform.OS == "Windows":
-					myFilePath = myFilePath.replace('%5C%5C', '%5C')
+					myFilePath = myFilePath.replace(':%5C%5C', ':%5C')
 				Log.Debug("Media from database: '%s' with a path of : %s" %(title, myFilePath))
 				myMediaPaths.append(myFilePath)
 		return
