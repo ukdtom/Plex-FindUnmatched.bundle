@@ -1,3 +1,10 @@
+V0.0.1.14:
+srazer checked in a fix for issue 37
+(If a media filename contains a comma, it will get detected as unmatched)
+
+srazer checked in a fix for issue 40
+(Files on a network share)
+
 V0.0.1.13:
 
 Fixed problem, where a madia spawing more than one file, was detected as unmatched

@@ -18,7 +18,7 @@ import unicodedata
 import string
 import urllib
 
-VERSION = ' V0.0.1.13'
+VERSION = ' V0.0.1.14'
 NAME = 'FindUnmatched'
 ART = 'art-default.jpg'
 ICON = 'icon-FindUnmatched.png'
