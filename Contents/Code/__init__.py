@@ -150,13 +150,13 @@ def compare(title):
 		if "All is good....no files are missing" in myResults:
 			foundNo = 0	
 	title = ("%d Unmatched Items found" %(foundNo))
-	title2 = item.decode('utf-8','ignore')
 	oc2 = ObjectContainer(title1=title, mixed_parents=True)
 	global myResults
 	counter = 1
 	for item in myResults:
 		title=item.decode('utf-8','ignore')
-		if title[0] == '[':
+                title2=title
+                if title[0] == '[':
 			title = title[1:]
 		if title[len(title)-1] == ']':
 			title = title[:-1]
