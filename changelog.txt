@@ -1,3 +1,7 @@
+V0.0.1.15:
+srazer checked in a fix for issue 39
+(Click on a found result)
+
 V0.0.1.14:
 srazer checked in a fix for issue 37
 (If a media filename contains a comma, it will get detected as unmatched)
