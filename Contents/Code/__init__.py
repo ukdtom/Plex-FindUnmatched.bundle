@@ -18,7 +18,7 @@ import unicodedata
 import string
 import urllib
 
-VERSION = ' V0.0.1.14'
+VERSION = ' V0.0.1.15'
 NAME = 'FindUnmatched'
 ART = 'art-default.jpg'
 ICON = 'icon-FindUnmatched.png'
@@ -155,13 +155,14 @@ def compare(title):
 	counter = 1
 	for item in myResults:
 		title=item.decode('utf-8','ignore')
-		if title[0] == '[':
+                title2=title
+                if title[0] == '[':
 			title = title[1:]
 		if title[len(title)-1] == ']':
 			title = title[:-1]
 		title = str(counter) + ": " + title
 		counter += 1
-		oc2.add(DirectoryObject(key=Callback(MainMenu), title=title))
+		oc2.add(DirectoryObject(key=Callback(MainMenu), title=title, summary="Unmatched file: \n\n"+title2))
 	return oc2
 
 ####################################################################################################
