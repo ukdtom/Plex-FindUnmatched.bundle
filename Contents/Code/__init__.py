@@ -162,7 +162,7 @@ def compare(title):
 			title = title[:-1]
 		title = str(counter) + ": " + title
 		counter += 1
-		oc2.add(DirectoryObject(key=Callback(MainMenu), title=title, summary=title2))
+		oc2.add(DirectoryObject(key=Callback(MainMenu), title=title, summary="Unmatched file: \n\n"+title2))
 	return oc2
 
 ####################################################################################################
