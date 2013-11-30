@@ -17,8 +17,9 @@ import os
 import unicodedata
 import string
 import urllib
+import time
 
-VERSION = ' V0.0.1.15'
+VERSION = ' V0.0.1.16 Alpha 1'
 NAME = 'FindUnmatched'
 ART = 'art-default.jpg'
 ICON = 'icon-FindUnmatched.png'
@@ -50,7 +51,7 @@ def Start():
 @route(PREFIX + '/MainMenu')
 def MainMenu():
 	Log.Debug("**********  Starting MainMenu  **********")
-	oc = ObjectContainer(no_cache=True)
+	oc = ObjectContainer() #no_cache=True)
 	#Use global variables due to my lack of Python skills....SNIFF...
 	global myPathList
 	# Clear the myPathList
@@ -65,10 +66,12 @@ def MainMenu():
 				paths = section.xpath('Location/@path')
 				Log.Debug("Title of section is %s with a key of %s and a path of : %s" %(title, key, paths))
 				myPathList[key]= ', '.join(paths)
-				oc.add(DirectoryObject(key=Callback(scanDB, title=title, sectiontype=sectiontype, key=key), title='Look in section "' + title + '"'))	
+				if sectiontype == "show":
+					oc.add(DirectoryObject(key=Callback(scanShowDB, title=title, sectiontype=sectiontype, key=key), title='Look in section "' + title + '"', summary='Look for unmatched files in "' + title + '"'))        
+				else:
+					oc.add(DirectoryObject(key=Callback(scanDB, title=title, sectiontype=sectiontype, key=key), title='Look in section "' + title + '"', summary='Look for unmatched files in "' + title + '"'))        
 	except:
 		Log.Critical("Exception happend in MainMenu")
-		pass
 	oc.add(PrefsObject(title='Preferences', thumb=R('icon-prefs.png')))
 	Log.Debug("**********  Ending MainMenu  **********")
 	return oc
@@ -88,8 +91,6 @@ def scanDB(title, key, sectiontype):
 		# Scan the database based on the type of section
 		if sectiontype == "movie":
 			scanMovieDB(myMediaURL)
-		if sectiontype == "show":
-			scanShowDB(myMediaURL)
 		if sectiontype == "artist":
 			scanArtistDB(myMediaURL)
 		Log.Debug("**********  Section filepath as stored in the database are: %s  *************" %(myMediaPaths))	
@@ -293,13 +294,33 @@ def scanMovieDB(myMediaURL):
 # This function will scan a TV-Show section for filepaths in medias
 ####################################################################################################
 @route(PREFIX + '/scanShowDB')
-def scanShowDB(myMediaURL):
-	Log.Debug("******* Starting scanShowDB with an URL of %s***********" %(myMediaURL))
-	global myMediaPaths
-	myMediaPaths[:] = []
+def scanShowDB(title, key, sectiontype, scanResume=0):
+	Log.Debug("******* Starting scanShowDB *********")
+	myMediaURL = PMS_URL + key + "/all"
+	if scanResume == 0:
+		global myMediaPaths
+		global myMedias
+		global stopScan
+		global scanTimerAbort
+		myMediaPaths[:] = []
+		Log.Debug("******* Starting scanShowDB with an URL of %s***********" %(myMediaURL))
+	else:
+		Log.Debug("******* Resuming scanShowDB from Show %s with a URL of %s*********" %(scanResume,myMediaURL))
+		scanResume=int(scanResume) # For some reason scanResume gets change from an integer to a string and has to be changed back.
+	# Time in seconds to scan for. For some reason, if this is too high the Plex app. will dump to the main menu. The web browser doesn't do this. ?!?!?
+	scanTime = 20
+	# Show counter
+	showCount = scanResume 
+	# Variable to stop the scan when scanTime runs out
+	stopScan = 0
+
+	# Start the timer thread
+	Thread.Create(scanTimer,globalize=True, scanTime=scanTime)
 	try:
-		myMedias = XML.ElementFromURL(myMediaURL).xpath('//Directory')
-		for myMedia in myMedias:
+		if scanResume == 0:
+			myMedias = XML.ElementFromURL(myMediaURL).xpath('//Directory')
+		for myMedia in myMedias[scanResume:]:
+			showCount += 1
 			ratingKey = myMedia.get("ratingKey")
 			Log.Debug("RatingKey is %s" %(ratingKey))
 			myURL = "http://" + host + "/library/metadata/" + ratingKey + "/allLeaves"
@@ -307,22 +328,35 @@ def scanShowDB(myMediaURL):
 			myMedias2 = XML.ElementFromURL(myURL).xpath('//Video')
 			for myMedia2 in myMedias2:
 				title = myMedia2.get("grandparentTitle") + "/" + myMedia2.get("title")
+				# Using three commas as one has issues with some filenames.
 				myFilePath = (',,,'.join(myMedia2.xpath('Media/Part/@file')).split(',,,'))
 				for myFilePath2 in myFilePath:
 					filename = urllib.unquote(myFilePath2).decode('utf8')
 					composed_filename = unicodedata.normalize('NFKC', filename)
 					myFilePath2 = urllib.quote(composed_filename.encode('utf8'))
 					# Remove esc backslash if present and on Windows
+					# The Colon prevents breaking Windows file shares.
 					if Platform.OS == "Windows":
 						myFilePath2 = myFilePath2.replace(':%5C%5C', ':%5C')
 					myMediaPaths.append(myFilePath2)					
 					Log.Debug("Media from database: '%s' with a path of : %s" %(title, myFilePath2))
-		return
+			if stopScan == 1:
+				oc = ObjectContainer(title1="Scanning Database", mixed_parents=True)
+				oc.add(DirectoryObject(key=Callback(scanShowDB, title=title, key=key, sectiontype=sectiontype, scanResume=showCount), title="*** Scan Timeout reached. ***", summary="The Plex client will only wait a few seconds for a response. So, we have to break the scan into chuncks. Please hit continue to resume the scan."))
+				oc.add(DirectoryObject(key=Callback(scanShowDB, title=title, key=key, sectiontype=sectiontype, scanResume=showCount), title="Continue Scan", summary="The Plex client will only wait a few seconds for a response. So, we have to break the scan into chuncks. Please hit continue to resume the scan."))
+				Log.Debug("Caught stopScan")
+				return oc
+				break
+		else:
+			oc = ObjectContainer(title1="Database scanned", mixed_parents=True)
+			oc.add(DirectoryObject(key=Callback(scanFiles, title=title, sectiontype=sectiontype, key=key), title="****** Click here to scan the file-system ******", summary="Database successfully scanned. Click here to scan the file-system"))
+			scanTimerAbort = 1
+			Log.Debug("******* Ending scanShowDB *********")
+			return oc
 	except:
 		Log.Critical("Detected an exception in scanShowDB")
-		pass
+		raise # Dumps the error so you can see what the problem is
 	Log.Debug("******* Ending scanShowDB ***********")
-
 
 ####################################################################################################
 # This function will scan a Music section for filepaths in medias
@@ -357,4 +391,21 @@ def scanArtistDB(myMediaURL):
 		pass
 	Log.Debug("******* Ending scanArtistDB ***********")
 
+####################################################################################################
+# Wait x seconds and set stopScan to 1. Abort if scanTimerAbort=1
+####################################################################################################
+def scanTimer(scanTime):
+	global stopScan
+	global scanTimerAbort
+	x = 0
+	scanTimerAbort = 0
+	while (x <= scanTime):
+		time.sleep(1)
+		x += 1
+		if scanTimerAbort == 1:
+			Log.Debug("************************* scanTimer Stopped *************************")
+			break
+	else:
+		Log.Debug("************************* scanTimer Finished *************************")
+		stopScan=1
 
