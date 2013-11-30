@@ -7,7 +7,7 @@
 #	and can be found here: 
 #	http://forums.plexapp.com/index.php/topic/39712-list-unmatched-media/?p=252267
 #	
-#	The origen idea to the code belongs to whymse
+#	The original idea to the code belongs to whymse
 #
 #	I just made it a little bit more user friendly
 #
