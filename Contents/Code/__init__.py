@@ -19,7 +19,7 @@ import string
 import urllib
 import time
 
-VERSION = ' V0.0.1.16 Alpha 1'
+VERSION = ' V0.0.1.16A2'
 NAME = 'FindUnmatched'
 ART = 'art-default.jpg'
 ICON = 'icon-FindUnmatched.png'
@@ -29,6 +29,7 @@ myPathList = {}			# Contains dict of section keys and file-path
 files = []			# Contains list of detected medias from the filesystem of a section
 myMediaPaths = []		# Contains filepath of selected section medias from the database
 myResults = []			# Contains the end results
+bScanStatus = 0
 
 ####################################################################################################
 # Start function
@@ -54,6 +55,11 @@ def MainMenu():
 	oc = ObjectContainer() #no_cache=True)
 	#Use global variables due to my lack of Python skills....SNIFF...
 	global myPathList
+	
+	# CSK Reset scan status
+	global bScanStatus
+	bScanStatus = 0
+	
 	# Clear the myPathList
 	myPathList.clear
 	try:
@@ -67,7 +73,8 @@ def MainMenu():
 				Log.Debug("Title of section is %s with a key of %s and a path of : %s" %(title, key, paths))
 				myPathList[key]= ', '.join(paths)
 				if sectiontype == "show":
-					oc.add(DirectoryObject(key=Callback(scanShowDB, title=title, sectiontype=sectiontype, key=key), title='Look in section "' + title + '"', summary='Look for unmatched files in "' + title + '"'))        
+					oc.add(DirectoryObject(key=Callback(scanShowDB, title=title, sectiontype=sectiontype, key=key), title='Look in section "' + title + '"', summary='Look for unmatched files in "' + title + '"'))
+					oc.add(DirectoryObject(key=Callback(startBackgroundScan, title=title, sectiontype=sectiontype, key=key), title='Look in section "' + title + '" Using BackgroundScanner', summary='Look for unmatched files in "' + title + '"'))
 				else:
 					oc.add(DirectoryObject(key=Callback(scanDB, title=title, sectiontype=sectiontype, key=key), title='Look in section "' + title + '"', summary='Look for unmatched files in "' + title + '"'))        
 	except:
@@ -106,9 +113,10 @@ def scanDB(title, key, sectiontype):
 ####################################################################################################
 @route(PREFIX + '/scanFiles')
 def scanFiles(title, key, sectiontype):
-	Log.Debug("*******  Starting scanFiles  ***********")	
+	Log.Debug("*******  Starting scanFiles  ***********")
 	global myPathList
 	global files
+	global bScanStatusCount
 	try:		
 		files[:] = []
 		Log.Debug("Section type is %s" %(sectiontype))
@@ -120,6 +128,7 @@ def scanFiles(title, key, sectiontype):
 				myPaths = myPathList[key].split(', ')
 				for myPath in myPaths:
 					files.append(listTree(myPath))
+					bScanStatusCount += 1
 		Log.Debug("********  Files found are the following: ***************")
 		Log.Debug(files)
 		oc2 = ObjectContainer(title1="FileSystem scanned", mixed_parents=True)
@@ -133,14 +142,14 @@ def scanFiles(title, key, sectiontype):
 # Find missing files
 ####################################################################################################
 @route(PREFIX + '/compare')
-def compare(title):
+def compare():
 	Log.Debug("*******  Starting compare  ***********")
 	global myMediaPaths
 	global files
 	findUnmatchedFiles()
 	Log.Info("*********************** The END RESULT Start *****************")
 	Log.Info("****** Found %d Items missing **************" %(len(myResults)))
-	Log.Info("The following files are missing in Plex database from section named: %s:" %(title))
+#	Log.Info("The following files are missing in Plex database from section named: %s:" %(title))
 	if len(myResults) == 0:
 		myResults.append("All is good....no files are missing")
 	Log.Info(myResults)
@@ -321,6 +330,7 @@ def scanShowDB(title, key, sectiontype, scanResume=0):
 			myMedias = XML.ElementFromURL(myMediaURL).xpath('//Directory')
 		for myMedia in myMedias[scanResume:]:
 			showCount += 1
+			Log.Debug("Show %s of %s" %(showCount, len(myMedias)))
 			ratingKey = myMedia.get("ratingKey")
 			Log.Debug("RatingKey is %s" %(ratingKey))
 			myURL = "http://" + host + "/library/metadata/" + ratingKey + "/allLeaves"
@@ -357,6 +367,49 @@ def scanShowDB(title, key, sectiontype, scanResume=0):
 		Log.Critical("Detected an exception in scanShowDB")
 		raise # Dumps the error so you can see what the problem is
 	Log.Debug("******* Ending scanShowDB ***********")
+
+@route(PREFIX + '/scanShowDB2')
+def scanShowDB2(myMediaURL):
+	Log.Debug("******* Starting scanShowDB2 *********")
+	global bScanStatus
+	global bScanStatusCount
+	global bScanStatusCountOf
+	global myMediaPaths
+	global myMedias
+#	myMediaURL = PMS_URL + key + "/all"
+	myMediaPaths[:] = []
+	bScanStatusCount = 0
+	Log.Debug("******* Starting scanShowDB2 with an URL of %s***********" %(myMediaURL))
+
+	try:
+		myMedias = XML.ElementFromURL(myMediaURL).xpath('//Directory')
+		bScanStatusCountOf = len(myMedias)
+		for myMedia in myMedias:
+			bScanStatusCount += 1
+			Log.Debug("Show %s of %s" %(bScanStatusCount, bScanStatusCountOf))
+			ratingKey = myMedia.get("ratingKey")
+#CSK			Log.Debug("RatingKey is %s" %(ratingKey))
+			myURL = "http://" + host + "/library/metadata/" + ratingKey + "/allLeaves"
+#CSK			Log.Debug("myURL is %s" %(myURL))
+			myMedias2 = XML.ElementFromURL(myURL).xpath('//Video')
+			for myMedia2 in myMedias2:
+				title = myMedia2.get("grandparentTitle") + "/" + myMedia2.get("title")
+				# Using three commas as one has issues with some filenames.
+				myFilePath = (',,,'.join(myMedia2.xpath('Media/Part/@file')).split(',,,'))
+				for myFilePath2 in myFilePath:
+					filename = urllib.unquote(myFilePath2).decode('utf8')
+					composed_filename = unicodedata.normalize('NFKC', filename)
+					myFilePath2 = urllib.quote(composed_filename.encode('utf8'))
+					# Remove esc backslash if present and on Windows
+					# The Colon prevents breaking Windows file shares.
+					if Platform.OS == "Windows":
+						myFilePath2 = myFilePath2.replace(':%5C%5C', ':%5C')
+					myMediaPaths.append(myFilePath2)					
+#CSK					Log.Debug("Media from database: '%s' with a path of : %s" %(title, myFilePath2))
+	except:
+		Log.Critical("Detected an exception in scanShowDB")
+		raise # Dumps the error so you can see what the problem is
+	Log.Debug("******* Ending scanShowDB2 ***********")
 
 ####################################################################################################
 # This function will scan a Music section for filepaths in medias
@@ -409,3 +462,125 @@ def scanTimer(scanTime):
 		Log.Debug("************************* scanTimer Finished *************************")
 		stopScan=1
 
+####################################################################################################
+# 
+####################################################################################################
+@route(PREFIX + '/startBackgroundScan')
+def startBackgroundScan(title, key, sectiontype):
+	Log.Debug("******* Starting startBackgroundScan *********")
+
+	# Current status of the Background Scanner:
+	# 0=not running, 1=db, 2=filesystem, 3=compare, 4=complete, 99=DOH!
+	global bScanStatus
+	
+	# Current status count (ex. "Show 2 of 31")
+	global bScanStatusCount
+	global bScanStatusCountOf
+	
+	try:
+		if bScanStatus == 0:
+			bScanStatusCount=0
+			bScanStatusCountOf=0
+			# Start scanner
+			Thread.Create(backgroundScan, globalize=True, title=title, key=key, sectiontype=sectiontype)
+			# Wait 10 seconds unless the scanner finishes
+			time.sleep(2)
+#			x = 0
+#			while (x <= 10):
+#				time.sleep(1)
+#				x += 1
+#				if bScanStatus == 4:
+#					break
+		oc2 = backgroundScanStatus()
+		return oc2
+	except:
+		Log.Critical("Detected an exception in startBackgroundScan")
+		raise
+	Log.Debug("******* Ending startBackgroundScan ***********")
+
+@route(PREFIX + '/backgroundScanStatus')
+def backgroundScanStatus(refreshCount=0):
+	Log.Debug("******* Starting backgroundScanStatus *********")
+	# Current status of the Background Scanner:
+	# 0=not running, 1=db, 2=filesystem, 3=compare, 4=complete, 99=DOH!
+	global bScanStatus
+	# Current status count (ex. "Show 2 of 31")
+	global bScanStatusCount
+	global bScanStatusCountOf
+
+	refreshCount = int(refreshCount)
+	refreshCount += 1
+	if bScanStatus == 1:
+		# db status
+		summary = "The Plex client will only wait a few seconds for us to work. Unfortunatly this process can take longer than Plex will allow, so we run the scan in the background. This requires you to keep checking on the status until it is complete. \n\n The Database is being scanned. Scanning " + str(bScanStatusCount) + " of " + str(bScanStatusCountOf) + ". \n\n Please wait a few seconds and check the status again."
+		oc2 = ObjectContainer(title1="Scanning Database " + str(bScanStatusCount) + " of " + str(bScanStatusCountOf) + ".", no_history=True, no_cache=True)
+		oc2.add(DirectoryObject(key=Callback(backgroundScanStatus, refreshCount=refreshCount), title="Scanning the database. Check Status.", summary=summary))
+#		oc2.add(DirectoryObject(key=Callback(backgroundScanStatus2), title="Continue Scan", summary=summary))
+		return oc2
+	elif bScanStatus == 2:
+		# filesystem status
+		summary = "The Plex client will only wait a few seconds for us to work. Unfortunatly this process can take longer than Plex will allow, so we run the scan in the background. This requires you to keep checking on the status until it is complete. \n\n The Database is being scanned. Scanning " + str(bScanStatusCount) + " of " + str(bScanStatusCountOf) + ". \n\n Please wait a few seconds and check the status again."
+		oc = ObjectContainer(title1="Scanning Filesystem file: " + str(bScanStatusCount) + ".", no_cache=True)
+		oc.add(DirectoryObject(key=Callback(backgroundScanStatus, refreshCount=refreshCount), title="Scanning filesystem. Check Status", summary=summary))
+		return oc
+	elif bScanStatus == 3:
+		# compare
+		summary = "Get the Results"
+		oc2 = ObjectContainer(title1="Results", mixed_parents=True, no_cache=True, no_history=True)
+		oc2.add(DirectoryObject(key=Callback(compare), title="*** Get the Results. ***", summary=summary))
+		bScanStatus = 0
+	elif bScanStatus == 4:
+		# complete
+		summary = "The Plex client will only wait a few seconds for us to work. Unfortunatly this process can take longer than Plex will allow, so we run the scan in the background. This requires you to keep checking on the status until it is complete. \n\n The Database is being scanned. Scanning " + str(bScanStatusCount) + " of " + str(bScanStatusCountOf) + ". \n\n Please wait a few seconds and check the status again."
+		oc2 = ObjectContainer(title1="Complete", mixed_parents=True, no_cache=True, no_history=True)
+		oc2.add(DirectoryObject(key=Callback(backgroundScanStatus, refreshCount=refreshCount), title="*** Complete. ***", summary=summary))
+	elif bScanStatus == 99:
+		# DOH!
+		summary = "The Plex client will only wait a few seconds for us to work. Unfortunatly this process can take longer than Plex will allow, so we run the scan in the background. This requires you to keep checking on the status until it is complete. \n\n The Database is being scanned. Scanning " + str(bScanStatusCount) + " of " + str(bScanStatusCountOf) + ". \n\n Please wait a few seconds and check the status again."
+		oc2 = ObjectContainer(title1="DOH!", mixed_parents=True, no_cache=True, no_history=True)
+		oc2.add(DirectoryObject(key=Callback(backgroundScanStatus, refreshCount=refreshCount), title="*** DOH!! ***", summary=summary))
+	else:
+		# Error
+		summary = "The Plex client will only wait a few seconds for us to work. Unfortunatly this process can take longer than Plex will allow, so we run the scan in the background. This requires you to keep checking on the status until it is complete. \n\n The Database is being scanned. Scanning " + str(bScanStatusCount) + " of " + str(bScanStatusCountOf) + ". \n\n Please wait a few seconds and check the status again."
+		oc2 = ObjectContainer(title1="Uh oh!", mixed_parents=True, no_cache=True, no_history=True)
+		oc2.add(DirectoryObject(key=Callback(backgroundScanStatus, refreshCount=refreshCount), title="*** Uh Oh! ***", summary=summary))
+	return oc2
+
+
+
+@route(PREFIX + '/backgroundScan')
+def backgroundScan(title, key, sectiontype):
+	Log.Debug("*******  Starting backgroundScan  ***********")
+	global myMediaPaths
+	global myPathList
+	global bScanStatus
+	global bScanStatusCount
+	global bScanStatusCountOf
+	
+	try:
+		Log.Debug("Section type is %s" %(sectiontype))
+		myMediaURL = PMS_URL + key + "/all"		
+		Log.Debug("Path to medias in section is %s" %(myMediaURL))
+		# Scan the database based on the type of section
+		bScanStatus = 1
+		if sectiontype == "movie":
+			scanMovieDB(myMediaURL)
+		if sectiontype == "artist":
+			scanArtistDB(myMediaURL)
+		if sectiontype == "show":
+			scanShowDB2(myMediaURL)
+		Log.Debug("**********  Section filepath as stored in the database are: %s  *************" %(myMediaPaths))
+		bScanStatusCount=0
+		bScanStatusCountOf=0
+
+		# Scan the filesystem
+		bScanStatus = 2
+		scanFiles(title=title, sectiontype=sectiontype, key=key)
+
+		bScanStatus = 3
+		
+
+	except:
+		Log.Critical("Exception happend in backgroundScan")
+		raise
+	return
