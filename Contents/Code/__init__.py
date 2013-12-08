@@ -20,7 +20,7 @@ import string
 import urllib
 import time
 
-VERSION = ' V0.0.1.16Beta1'
+VERSION = ' V0.0.1.16Beta2'
 NAME = 'FindUnmatched'
 ART = 'art-default.jpg'
 ICON = 'icon-FindUnmatched.png'
@@ -31,6 +31,7 @@ files = []				# Contains list of detected medias from the filesystem of a sectio
 myMediaPaths = []		# Contains filepath of selected section medias from the database
 myResults = []			# Contains the end results
 bScanStatus = 0			# Current status of the background scan
+initialTimeOut = 10		# When starting a scan, how long in seconds to wait before displaying a status page.
 
 ####################################################################################################
 # Start function
@@ -374,7 +375,7 @@ def backgroundScan(title, key, sectiontype, refreshCount=0):
 			Thread.Create(backgroundScanThread, globalize=True, title=title, key=key, sectiontype=sectiontype)
 			# Wait 10 seconds unless the scanner finishes
 			x = 0
-			while (x <= 10):
+			while (x <= initialTimeOut):
 				time.sleep(1)
 				x += 1
 				if bScanStatus == 3:
