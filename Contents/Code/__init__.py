@@ -20,7 +20,7 @@ import string
 import urllib
 import time
 
-VERSION = ' V0.0.1.16Beta3'
+VERSION = ' V0.0.1.16'
 NAME = 'FindUnmatched'
 ART = 'art-default.jpg'
 ICON = 'icon-FindUnmatched.png'
