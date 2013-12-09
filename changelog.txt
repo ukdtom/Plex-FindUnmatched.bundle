@@ -1,3 +1,7 @@
+V0.0.1.16
+- The scanning now takes place in a background thread with the user checking the status. (Fix for Issue #16: Timeout when searching very large sections )
+- Notify to user if the file scanner comes back empty
+
 V0.0.1.15:
 srazer checked in a fix for issue 39
 (Click on a found result)
