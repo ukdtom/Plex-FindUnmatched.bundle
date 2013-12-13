@@ -1,3 +1,8 @@
+V0.0.1.17
+-Added code for ignoring dirs. Issue #45
+-Fixed wildcards for ignoring files
+-Changed preference variables names to fit what they are for
+
 V0.0.1.16
 - The scanning now takes place in a background thread with the user checking the status. (Fix for Issue #16: Timeout when searching very large sections )
 - Notify to user if the file scanner comes back empty
