@@ -19,8 +19,9 @@ import unicodedata
 import string
 import urllib
 import time
+import fnmatch
 
-VERSION = ' V0.0.1.16'
+VERSION = ' V0.0.1.17'
 NAME = 'FindUnmatched'
 ART = 'art-default.jpg'
 ICON = 'icon-FindUnmatched.png'
@@ -163,34 +164,55 @@ def findUnmatchedFiles():
 	global bScanStatusCount
 	myResults[:] = []
 	Log.Debug("******* Start findUnmatchedFiles ******")
+
+	# Convert IGNORED_FILES to a list. Replace gets rid of any space after the comma
+	ignoredFilesList= IGNORED_FILES.replace(', ',',').split(',')
+
 	Log.Debug("*********************** Database paths: *******************************************")
 	Log.Debug(myMediaPaths)
 	Log.Debug("*********************** FileSystem Paths: *****************************************")
 	files = str(files)[2:-2].replace("'", "").split(', ')
 	Log.Debug(files)
 	for filePath in files:
-		Log.Debug("Handling file #%s: %s" %(bScanStatusCount, filePath.decode("utf-8")))
+		# Decode filePath 
+		filePath2 = urllib.unquote(filePath).decode('utf8')
+		Log.Debug("Handling file #%s: %s" %(bScanStatusCount, filePath2))
 		bScanStatusCount += 1
+		# If the file is not in the database, figure out what to do.
 		if filePath not in myMediaPaths:
 			myext = os.path.splitext(filePath)[1].lower()
 			cext = myext.rstrip("']")
-			fname = os.path.split(filePath)[1]
-			if (fname in OK_FILES):
-				#Don't do anything for acceptable files
-				Log.Debug("File is part of OK_Files")
+			fname = os.path.split(filePath2)[1]
+
+			if (fname in IGNORED_FILES):
+				# Filename is in ignored files, won't catch wildcards
+				Log.Debug("File is part of ignored files.")
 				continue
-			elif (cext in OTHER_EXTENSIONS):
-				#ignore images and subtitles
+			elif (cext in IGNORED_EXTENSIONS):
+				# File extension in in ignored extensions
 				Log.Debug("File is part of ignored extentions")
 				continue
 			elif (cext not in VALID_EXTENSIONS):
 				#these shouldn't be here
 				if (display_ignores):
-					Log.Debug("Ignoring %s" %(filePath))
+					Log.Debug("Ignoring %s" %(filePath2))
 					continue
 			else:
-				Log.Debug("Missing this file")
-				myResults.append(urllib.unquote(filePath))
+				###############################################
+				# Search the ignoredFilesList for a match against the current file.
+				# Needed for wildcards. Ugly but it works.
+				caught=0
+				for l in ignoredFilesList:
+					if fnmatch.fnmatch(fname, l):
+						Log.Debug("File matched %s in the ignored files list" %(l))
+						caught=1
+						break
+				###############################################
+				if caught == 1:
+					continue
+				else:
+					Log.Debug("Missing this file")
+					myResults.append(urllib.unquote(filePath))
 	return 
 
 ####################################################################################################
@@ -208,16 +230,16 @@ def getPrefs():
 	Log.Debug("PMS_URL is : %s" %(PMS_URL))
 	global VALID_EXTENSIONS
 	VALID_EXTENSIONS = Prefs['VALID_EXTENSIONS']
-	Log.Debug("VALID_EXTENSIONS from prefs are : %s" %(VALID_EXTENSIONS))	
-	global OK_FILES
-	OK_FILES = Prefs['OK_FILES']
-	Log.Debug("OK_FILES from prefs are : %s" %(OK_FILES))
+	Log.Debug("VALID_EXTENSIONS from prefs are : %s" %(VALID_EXTENSIONS))
+	global IGNORED_FILES
+	IGNORED_FILES = Prefs['IGNORED_FILES']
+	Log.Debug("IGNORED_FILES from prefs are : %s" %(IGNORED_FILES))
 	global IGNORED_DIRS
 	IGNORED_DIRS = Prefs['IGNORED_DIRS']
 	Log.Debug("IGNORED_DIRS from prefs are : %s" %(IGNORED_DIRS))
-	global OTHER_EXTENSIONS
-	OTHER_EXTENSIONS = Prefs['OTHER_EXTENSIONS']
-	Log.Debug("OTHER_EXTENSIONS from prefs are : %s" %(OTHER_EXTENSIONS))
+	global IGNORED_EXTENSIONS
+	IGNORED_EXTENSIONS = Prefs['IGNORED_EXTENSIONS']
+	Log.Debug("IGNORED_EXTENSIONS from prefs are : %s" %(IGNORED_EXTENSIONS))
 	Log.Debug("*********  Ending get User Prefs  ***************")
 	return
 
@@ -229,6 +251,10 @@ def listTree(top, files=list()):
 	global bScanStatusCount
 	Log.Debug("******* Starting ListTree with a path of %s***********" %(top))
 	r = files[:]
+	# If the directory is in the ignore list don't process it.
+	if os.path.basename(os.path.normpath(top)) in IGNORED_DIRS:
+		Log.Debug("Ignoring directory %s" %(top))
+		return r
 	try:
 		if not os.path.exists(top):
 			Log.Debug("The file share [%s] is not mounted" %(top))
