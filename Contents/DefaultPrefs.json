@@ -14,7 +14,7 @@
 	},
 
 	{
-		"id":"OK_FILES",
+		"id":"IGNORED_FILES",
 		"label":"Files that are ignorred, seperated with a comma, and * is allowed as a wildcard",
 		"type":"text",
 		"default":"imdb.nfo, .DS_Store, __db.001, .*"
@@ -24,11 +24,11 @@
 		"id":"IGNORED_DIRS",
 		"label":"Ignorred directories, seperated with a comma",
 		"type":"text",
-		"default":".@__thumb, /.AppleDouble/"
+		"default":".@__thumb, .AppleDouble"
 	},
 
 	{
-		"id":"OTHER_EXTENSIONS",
+		"id":"IGNORED_EXTENSIONS",
 		"label":"Ignorred extentions, seperated with a comma",
 		"type":"text",
 		"default":".srt, .xml, .idx, .jpg, .sub"
