@@ -1,3 +1,8 @@
+V0.0.1.18
+-Matches are now case insensitive.
+-Prefs are now reloaded in findUnmatchedFiles() to make sure we have any changes.
+-Can now set valid extensions to ALL to list all files except those in the ignore lists.
+
 V0.0.1.17
 -Added code for ignoring dirs. Issue #45
 -Fixed wildcards for ignoring files

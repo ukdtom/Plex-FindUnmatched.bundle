@@ -21,7 +21,7 @@ import urllib
 import time
 import fnmatch
 
-VERSION = ' V0.0.1.17'
+VERSION = ' V0.0.1.18'
 NAME = 'FindUnmatched'
 ART = 'art-default.jpg'
 ICON = 'icon-FindUnmatched.png'
@@ -163,6 +163,9 @@ def findUnmatchedFiles():
 	global myResults
 	global bScanStatusCount
 	myResults[:] = []
+
+	# Make sure we have the latest Prefs
+	getPrefs()
 	Log.Debug("******* Start findUnmatchedFiles ******")
 
 	# Convert IGNORED_FILES to a list. Replace gets rid of any space after the comma
@@ -182,18 +185,18 @@ def findUnmatchedFiles():
 		if filePath not in myMediaPaths:
 			myext = os.path.splitext(filePath)[1].lower()
 			cext = myext.rstrip("']")
-			fname = os.path.split(filePath2)[1]
+			fname = os.path.split(filePath2)[1].lower()
 
-			if (fname in IGNORED_FILES):
+			if (fname in IGNORED_FILES.lower()):
 				# Filename is in ignored files, won't catch wildcards
 				Log.Debug("File is part of ignored files.")
 				continue
-			elif (cext in IGNORED_EXTENSIONS):
+			elif (cext in IGNORED_EXTENSIONS.lower()):
 				# File extension in in ignored extensions
 				Log.Debug("File is part of ignored extentions")
 				continue
-			elif (cext not in VALID_EXTENSIONS):
-				#these shouldn't be here
+			elif (cext not in VALID_EXTENSIONS.lower() and VALID_EXTENSIONS.lower() != 'all'):
+				# If file extension is not in VALID_EXTENSIONS and VALID_EXTENSIONS != 'all', then ignoe the file
 				if (display_ignores):
 					Log.Debug("Ignoring %s" %(filePath2))
 					continue
