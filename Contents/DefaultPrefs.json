@@ -31,7 +31,7 @@
 		"id":"IGNORED_EXTENSIONS",
 		"label":"Ignorred extentions, seperated with a comma",
 		"type":"text",
-		"default":".srt, .xml, .idx, .jpg, .sub, .nfo, .png"
+		"default":".srt, .xml, .idx, .jpg, .sub, .nfo, .png, .gif, *.txt, *.rtf, *.m3u, *.rar, *.sfv, *.md5, *.ico, *.doc, *.zip"
 	}
 
 ]
