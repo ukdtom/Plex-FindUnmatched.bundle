@@ -2,6 +2,7 @@ V0.0.1.19
 -Change backgroundScan to use time.clock() instead of scanCounter when checking status to force new status instead of a cached page. Fixes not always getting new results.
 -If the scan is complete before the initial timeout go straight to the results.
 -Added the following extensions to the default ignore extension list: .gif, *.txt, *.rtf, *.m3u, *.rar, *.sfv, *.md5, *.ico, *.doc, *.zip
+-Hopefully catch a weird rare crash at line 104 where the file list comes up empty and dumps to an internal error.
 
 V0.0.1.18
 -Matches are now case insensitive.
