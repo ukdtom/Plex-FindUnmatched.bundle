@@ -21,7 +21,7 @@ import urllib
 import time
 import fnmatch
 
-VERSION = ' V0.0.1.18'
+VERSION = ' V0.0.1.19'
 NAME = 'FindUnmatched'
 ART = 'art-default.jpg'
 ICON = 'icon-FindUnmatched.png'
@@ -101,9 +101,12 @@ def scanFiles(title, key, sectiontype):
 		Log.Debug("********  Files found are the following: ***************")
 		Log.Debug(files)
 		# Check for no files
-		if len(files[0]) == 0:
+		if files == '':
 			bScanStatus = 90
-			Log.Debug("*******  scanFiles: no files found ***********")
+			Log.Debug("*******  scanFiles: no files found: files='' ***********")
+		elif len(files[0]) == 0:
+			bScanStatus = 90
+			Log.Debug("*******  scanFiles: no files found: len(files[0])=0 ***********")
 	except:
 		Log.Critical("Exception happened in scanFiles")
 		bScanStatus = 99
@@ -403,7 +406,7 @@ def scanArtistDB(myMediaURL):
 # Start the scanner in a background thread and provide status while running
 ####################################################################################################
 @route(PREFIX + '/backgroundScan')
-def backgroundScan(title, key, sectiontype, refreshCount=0, random=0):
+def backgroundScan(title, key, sectiontype, random=0):
 	Log.Debug("******* Starting backgroundScan *********")
 	# Current status of the Background Scanner:
 	# 0=not running, 1=db, 2=filesystem, 3=compare, 4=complete, 
@@ -412,10 +415,6 @@ def backgroundScan(title, key, sectiontype, refreshCount=0, random=0):
 	# Current status count (ex. "Show 2 of 31")
 	global bScanStatusCount
 	global bScanStatusCountOf
-	# The webclient won't reload if the url is the same for some reason, so I put in a refresh counter
-	# to give a different url every time.
-	refreshCount = int(refreshCount)
-	refreshCount += 1
 	try:
 		if bScanStatus == 0:
 			bScanStatusCount = 0
@@ -429,6 +428,8 @@ def backgroundScan(title, key, sectiontype, refreshCount=0, random=0):
 				x += 1
 				if bScanStatus == 4:
 					Log.Debug("************** Scan Done, stopping wait **************")
+					oc2 = compare(title=title)
+					return oc2
 					break
 				if bScanStatus >= 90:
 					Log.Debug("************** Error in thread, stopping wait **************")
@@ -439,21 +440,21 @@ def backgroundScan(title, key, sectiontype, refreshCount=0, random=0):
 			# Scanning Database
 			summary = summary + "The Database is being scanned. \nScanning " + str(bScanStatusCount) + " of " + str(bScanStatusCountOf) + ". \nPlease wait a few seconds and check the status again."
 			oc2 = ObjectContainer(title1="Scanning Database " + str(bScanStatusCount) + " of " + str(bScanStatusCountOf) + ".", no_history=True)
-			oc2.add(DirectoryObject(key=Callback(backgroundScan, refreshCount=refreshCount, title=title, sectiontype=sectiontype, key=key), title="Scanning the database. Check Status.", summary=summary))
-			oc2.add(DirectoryObject(key=Callback(backgroundScan, refreshCount=refreshCount, title=title, sectiontype=sectiontype, key=key), title="Scanning " + str(bScanStatusCount) + " of " + str(bScanStatusCountOf), summary=summary))
+			oc2.add(DirectoryObject(key=Callback(backgroundScan, random=time.clock(), title=title, sectiontype=sectiontype, key=key), title="Scanning the database. Check Status.", summary=summary))
+			oc2.add(DirectoryObject(key=Callback(backgroundScan, random=time.clock(), title=title, sectiontype=sectiontype, key=key), title="Scanning " + str(bScanStatusCount) + " of " + str(bScanStatusCountOf), summary=summary))
 			return oc2
 		elif bScanStatus == 2:
 			# Scanning Filesystem
 			summary = summary + "The filesystem is being scanned. \n Scanning file #" + str(bScanStatusCount) + ".\nPlease wait a few seconds and check the status again."
 			oc2 = ObjectContainer(title1="Scanning Filesystem #" + str(bScanStatusCount), no_history=True)
-			oc2.add(DirectoryObject(key=Callback(backgroundScan, refreshCount=refreshCount, title=title, sectiontype=sectiontype, key=key), title="Scanning filesystem. Check Status", summary=summary))
-			oc2.add(DirectoryObject(key=Callback(backgroundScan, refreshCount=refreshCount, title=title, sectiontype=sectiontype, key=key), title="Scanning file #" + str(bScanStatusCount), summary=summary))
+			oc2.add(DirectoryObject(key=Callback(backgroundScan, random=time.clock(), title=title, sectiontype=sectiontype, key=key), title="Scanning filesystem. Check Status", summary=summary))
+			oc2.add(DirectoryObject(key=Callback(backgroundScan, random=time.clock(), title=title, sectiontype=sectiontype, key=key), title="Scanning file #" + str(bScanStatusCount), summary=summary))
 		elif bScanStatus == 3:
 			# Comparing results
 			summary = summary + "Comparing the results. \n Scanning #" + str(bScanStatusCount) + ".\nPlease wait a few seconds and check the status again."
 			oc2 = ObjectContainer(title1="Comparing #" + str(bScanStatusCount), no_history=True)
-			oc2.add(DirectoryObject(key=Callback(backgroundScan, refreshCount=refreshCount, title=title, sectiontype=sectiontype, key=key), title="Comparing the results. Check Status", summary=summary))
-			oc2.add(DirectoryObject(key=Callback(backgroundScan, refreshCount=refreshCount, title=title, sectiontype=sectiontype, key=key), title="File #" + str(bScanStatusCount), summary=summary))
+			oc2.add(DirectoryObject(key=Callback(backgroundScan, random=time.clock(), title=title, sectiontype=sectiontype, key=key), title="Comparing the results. Check Status", summary=summary))
+			oc2.add(DirectoryObject(key=Callback(backgroundScan, random=time.clock(), title=title, sectiontype=sectiontype, key=key), title="File #" + str(bScanStatusCount), summary=summary))
 		elif bScanStatus == 4:
 			# See Results
 			summary = "Scan complete, click here to get the results."
@@ -469,13 +470,13 @@ def backgroundScan(title, key, sectiontype, refreshCount=0, random=0):
 			# Error condition set by scanner
 			summary = "An internal error has occurred. Please check the logs"
 			oc2 = ObjectContainer(title1="Internal Error Detected. Please check the logs",no_history=True)
-			oc2.add(DirectoryObject(key=Callback(backgroundScan, refreshCount=refreshCount, title=title, sectiontype=sectiontype, key=key), title="An internal error has occurred.", summary=summary))
+			oc2.add(DirectoryObject(key=Callback(backgroundScan, random=time.clock(), title=title, sectiontype=sectiontype, key=key), title="An internal error has occurred.", summary=summary))
 			bScanStatus = 0
 		else:
 			# Unknown status. Should not happen.
 			summary = "Something went horribly wrong. The scanner returned an unknown status."
 			oc2 = ObjectContainer(title1="Uh Oh!.", no_history=True)
-			oc2.add(DirectoryObject(key=Callback(backgroundScan, refreshCount=refreshCount, title=title, sectiontype=sectiontype, key=key), title="*** Unknown status from scanner ***", summary=summary))
+			oc2.add(DirectoryObject(key=Callback(backgroundScan, random=time.clock(), title=title, sectiontype=sectiontype, key=key), title="*** Unknown status from scanner ***", summary=summary))
 	except:
 		Log.Critical("Detected an exception in backgroundScan")
 		raise
@@ -534,3 +535,4 @@ def backgroundScanThread(title, key, sectiontype):
 		bScanStatus = 99
 		raise
 	Log.Debug("*******  Ending backgroundScanThread  ***********")
+
