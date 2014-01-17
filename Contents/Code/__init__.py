@@ -21,18 +21,20 @@ import urllib
 import time
 import fnmatch
 
-VERSION = ' V0.0.1.19'
+VERSION = ' V0.0.1.20'
 NAME = 'FindUnmatched'
 ART = 'art-default.jpg'
 ICON = 'icon-FindUnmatched.png'
 PREFIX = '/applications/findUnmatched'
 
 myPathList = {}			# Contains dict of section keys and file-path
-files = []				# Contains list of detected medias from the filesystem of a section
-myMediaPaths = []		# Contains filepath of selected section medias from the database
 myResults = []			# Contains the end results
 bScanStatus = 0			# Current status of the background scan
 initialTimeOut = 10		# When starting a scan, how long in seconds to wait before displaying a status page. Needs to be at least 1.
+
+# These are no longer defined globally
+#files = []				# Contains list of detected medias from the filesystem of a section
+#myMediaPaths = []		# Contains filepath of selected section medias from the database
 
 ####################################################################################################
 # Start function
@@ -61,6 +63,7 @@ def MainMenu(random=0):
 
 	# Clear the myPathList
 	myPathList.clear
+
 	try:
 		sections = XML.ElementFromURL(PMS_URL).xpath('//Directory')
 		for section in sections:
@@ -85,11 +88,10 @@ def MainMenu(random=0):
 def scanFiles(title, key, sectiontype):
 	Log.Debug("*******  Starting scanFiles  ***********")
 	global myPathList
-	global files
 	global bScanStatus
+	files = []
 
 	try:
-		files[:] = []
 		Log.Debug("Section type is %s" %(sectiontype))
 		myMediaURL = PMS_URL + key + "/all"
 		# Now we need all filepaths added to the section
@@ -97,7 +99,7 @@ def scanFiles(title, key, sectiontype):
 			if key == myKey:
 				myPaths = myPathList[key].split(', ')
 				for myPath in myPaths:
-					files.append(listTree(myPath))
+					files.extend(listTree(myPath))
 		Log.Debug("********  Files found are the following: ***************")
 		Log.Debug(files)
 		# Check for no files
@@ -107,22 +109,22 @@ def scanFiles(title, key, sectiontype):
 		elif len(files[0]) == 0:
 			bScanStatus = 90
 			Log.Debug("*******  scanFiles: no files found: len(files[0])=0 ***********")
+		return files
 	except:
 		Log.Critical("Exception happened in scanFiles")
 		bScanStatus = 99
 		raise
 	Log.Debug("*******  Ending scanFiles  ***********")
-	return
 
 ####################################################################################################
-# Find missing files
+# Display the results.
 ####################################################################################################
-@route(PREFIX + '/compare')
-def compare(title):
-	Log.Debug("*******  Starting compare  ***********")
-	global myMediaPaths
-	global files
+@route(PREFIX + '/results')
+def results(title):
+	Log.Debug("*******  Starting results  ***********")
 	global bScanStatus
+	global myResults
+
 	Log.Info("*********************** The END RESULT Start *****************")
 	Log.Info("****** Found %d Items missing **************" %(len(myResults)))
 	Log.Info("The following files are missing in Plex database from section named: %s:" %(title))
@@ -130,14 +132,12 @@ def compare(title):
 		myResults.append("All is good....no files are missing")
 	Log.Info(myResults)
 	Log.Info("*********************** The END RESULT End *****************")
-	Log.Debug("*******  Ending confirmScan  ***********")
 	foundNo = len(myResults)
 	if foundNo == 1:
 		if "All is good....no files are missing" in myResults:
 			foundNo = 0
 	title = ("%d Unmatched Items found" %(foundNo))
 	oc2 = ObjectContainer(title1=title, no_cache=True)
-	global myResults
 	counter = 1
 	for item in myResults:
 		title=item.decode('utf-8','ignore')
@@ -152,23 +152,20 @@ def compare(title):
 
 	# Reset the scanner status
 	bScanStatus = 0
+	Log.Debug("*******  Ending results  ***********")
 	return oc2
 
 ####################################################################################################
-# Do the files
+# Look for found files in the database.
 ####################################################################################################
 @route(PREFIX + '/findUnmatchedFiles')
-def findUnmatchedFiles():
+def findUnmatchedFiles(files, myMediaPaths):
 	fname = ""
 	display_ignores = False
-	global files
-	global myMediaPaths
 	global myResults
 	global bScanStatusCount
-	myResults[:] = []
+	myResults = []
 
-	# Make sure we have the latest Prefs
-	getPrefs()
 	Log.Debug("******* Start findUnmatchedFiles ******")
 
 	# Convert IGNORED_FILES to a list. Replace gets rid of any space after the comma
@@ -219,7 +216,7 @@ def findUnmatchedFiles():
 				else:
 					Log.Debug("Missing this file")
 					myResults.append(urllib.unquote(filePath))
-	return 
+	return myResults
 
 ####################################################################################################
 # Get user settings, and if not existing, get the defaults
@@ -292,12 +289,11 @@ def listTree(top, files=list()):
 @route(PREFIX + '/scanMovieDB')
 def scanMovieDB(myMediaURL):
 	Log.Debug("******* Starting scanMovieDB with an URL of %s***********" %(myMediaURL))
-	global myMediaPaths
 	global bScanStatusCount
 	global bScanStatusCountOf
 	bScanStatusCount = 0
 	bScanStatusCountOf = 0
-	myMediaPaths[:] = []
+	myMediaPaths = []
 	myTmpPath = []
 	try:
 		myMedias = XML.ElementFromURL(myMediaURL).xpath('//Video')
@@ -315,6 +311,7 @@ def scanMovieDB(myMediaURL):
 				bScanStatusCount += 1
 				Log.Debug("Media #%s from database: '%s' with a path of : %s" %(bScanStatusCount, title, myFilePath))
 				myMediaPaths.append(myFilePath)
+		return myMediaPaths
 	except:
 		Log.Critical("Detected an exception in scanMovieDB")
 		bScanStatus = 99
@@ -329,10 +326,9 @@ def scanShowDB(myMediaURL):
 	Log.Debug("******* Starting scanShowDB with an URL of %s***********" %(myMediaURL))
 	global bScanStatusCount
 	global bScanStatusCountOf
-	global myMediaPaths
-	global myMedias
-	myMediaPaths[:] = []
+	myMediaPaths = []
 	bScanStatusCount = 0
+	filecount = 0
 
 	try:
 		myMedias = XML.ElementFromURL(myMediaURL).xpath('//Directory')
@@ -356,7 +352,9 @@ def scanShowDB(myMediaURL):
 					if Platform.OS == "Windows":
 						myFilePath2 = myFilePath2.replace(':%5C%5C', ':%5C')
 					myMediaPaths.append(myFilePath2)
+					filecount += 1
 					Log.Debug("Media from database: '%s' with a path of : %s" %(title, myFilePath2))
+		return (myMediaPaths, filecount)
 	except:
 		Log.Critical("Detected an exception in scanShowDB")
 		bScanStatus = 99
@@ -371,8 +369,8 @@ def scanArtistDB(myMediaURL):
 	Log.Debug("******* Starting scanArtistDB with an URL of %s***********" %(myMediaURL))
 	global bScanStatusCount
 	global bScanStatusCountOf
-	global myMediaPaths
-	myMediaPaths[:] = []
+	myMediaPaths = []
+	filecount = 0
 	try:
 		myMedias = XML.ElementFromURL(myMediaURL).xpath('//Directory')
 		bScanStatusCountOf = len(myMedias)
@@ -395,7 +393,9 @@ def scanArtistDB(myMediaURL):
 				if Platform.OS == "Windows":
 					myFilePath = myFilePath.replace(':%5C%5C', ':%5C')
 				myMediaPaths.append(myFilePath)
+				filecount += 1
 				Log.Debug("Media from database: '%s' with a path of : %s" %(title, myFilePath))
+		return (myMediaPaths, filecount)
 	except:
 		Log.Critical("Detected an exception in scanArtistDB")
 		bScanStatus = 99
@@ -409,7 +409,7 @@ def scanArtistDB(myMediaURL):
 def backgroundScan(title, key, sectiontype, random=0):
 	Log.Debug("******* Starting backgroundScan *********")
 	# Current status of the Background Scanner:
-	# 0=not running, 1=db, 2=filesystem, 3=compare, 4=complete, 
+	# 0=not running, 1=db, 2=filesystem, 3=compare, 4=complete
 	# Errors: 90=filesystem empty, 99=Other Error
 	global bScanStatus
 	# Current status count (ex. "Show 2 of 31")
@@ -428,7 +428,7 @@ def backgroundScan(title, key, sectiontype, random=0):
 				x += 1
 				if bScanStatus == 4:
 					Log.Debug("************** Scan Done, stopping wait **************")
-					oc2 = compare(title=title)
+					oc2 = results(title=title)
 					return oc2
 					break
 				if bScanStatus >= 90:
@@ -445,8 +445,8 @@ def backgroundScan(title, key, sectiontype, random=0):
 			return oc2
 		elif bScanStatus == 2:
 			# Scanning Filesystem
-			summary = summary + "The filesystem is being scanned. \n Scanning file #" + str(bScanStatusCount) + ".\nPlease wait a few seconds and check the status again."
-			oc2 = ObjectContainer(title1="Scanning Filesystem #" + str(bScanStatusCount), no_history=True)
+			summary = summary + "The filesystem is being scanned. \n Scanning file #" + str(bScanStatusCount) + " of about " + str(bScanStatusCountOf) + ".\nPlease wait a few seconds and check the status again."
+			oc2 = ObjectContainer(title1="Scanning Filesystem #" + str(bScanStatusCount) + " of about " + str(bScanStatusCountOf) + ".", no_history=True)
 			oc2.add(DirectoryObject(key=Callback(backgroundScan, random=time.clock(), title=title, sectiontype=sectiontype, key=key), title="Scanning filesystem. Check Status", summary=summary))
 			oc2.add(DirectoryObject(key=Callback(backgroundScan, random=time.clock(), title=title, sectiontype=sectiontype, key=key), title="Scanning file #" + str(bScanStatusCount), summary=summary))
 		elif bScanStatus == 3:
@@ -459,7 +459,7 @@ def backgroundScan(title, key, sectiontype, random=0):
 			# See Results
 			summary = "Scan complete, click here to get the results."
 			oc2 = ObjectContainer(title1="Results", no_history=True)
-			oc2.add(DirectoryObject(key=Callback(compare, title=title), title="*** Get the Results. ***", summary=summary))
+			oc2.add(DirectoryObject(key=Callback(results, title=title), title="*** Get the Results. ***", summary=summary))
 		elif bScanStatus == 90:
 			# scanFiles returned no files
 			summary = "The filesystem scan returned no files."
@@ -490,25 +490,27 @@ def backgroundScan(title, key, sectiontype, random=0):
 @route(PREFIX + '/backgroundScanThread')
 def backgroundScanThread(title, key, sectiontype):
 	Log.Debug("*******  Starting backgroundScanThread  ***********")
-	global myMediaPaths
-	global myPathList
 	global bScanStatus
 	global bScanStatusCount
 	global bScanStatusCountOf
 	
 	try:
 		bScanStatus = 1
+		# Make sure we have the latest Prefs
+		getPrefs()
+
 		Log.Debug("Section type is %s" %(sectiontype))
 		myMediaURL = PMS_URL + key + "/all"		
 		Log.Debug("Path to medias in section is %s" %(myMediaURL))
 
 		# Scan the database based on the type of section
 		if sectiontype == "movie":
-			scanMovieDB(myMediaURL)
+			myMediaPaths = scanMovieDB(myMediaURL)
+			filecount = bScanStatusCount
 		if sectiontype == "artist":
-			scanArtistDB(myMediaURL)
+			myMediaPaths, filecount = scanArtistDB(myMediaURL)
 		if sectiontype == "show":
-			scanShowDB(myMediaURL)
+			myMediaPaths, filecount = scanShowDB(myMediaURL)
 			Log.Debug("**********  Section filepath as stored in the database are: %s  *************" %(myMediaPaths))
 		# Stop scanner on error
 		if bScanStatus >= 90: return
@@ -516,14 +518,15 @@ def backgroundScanThread(title, key, sectiontype):
 		# Scan the filesystem
 		bScanStatus = 2
 		bScanStatusCount = 0
-		scanFiles(title=title, sectiontype=sectiontype, key=key)
+		bScanStatusCountOf = filecount
+		files = scanFiles(title, key, sectiontype)
 		# Stop scanner on error
 		if bScanStatus >= 90: return
 
 		# Find unmatched files
 		bScanStatus = 3
 		bScanStatusCount = 0
-		findUnmatchedFiles()
+		findUnmatchedFiles(files=files, myMediaPaths=myMediaPaths)
 		# Stop scanner on error
 		if bScanStatus >= 90: return
 

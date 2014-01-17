@@ -1,3 +1,10 @@
+V0.0.1.20
+-Renamed function compare() to results() to reflect what is actually done.
+-File scanner now give an approximate total while scanning.
+-Fix false positives when library contains multiple locations. Issue #49
+-Hopefully fix false message that the filesystem is empty.
+-Cut down on the number of global variables.
+
 V0.0.1.19
 -Change backgroundScan to use time.clock() instead of scanCounter when checking status to force new status instead of a cached page. Fixes not always getting new results.
 -If the scan is complete before the initial timeout go straight to the results.
