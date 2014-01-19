@@ -1,3 +1,10 @@
+v0.0.1.21
+-.plexignore files are now used. This can be enabled/disabled in the prefs. Fixes issue #51
+-Clicking on and error message will now correctly reset the program and return to the main menu.
+-Option to scan all extensions except ignored is now a checkbox.
+-Moved listTree() to just below scanFiles() for easier readability.
+
+
 V0.0.1.20
 -Renamed function compare() to results() to reflect what is actually done.
 -File scanner now give an approximate total while scanning.
