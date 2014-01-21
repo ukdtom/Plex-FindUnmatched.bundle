@@ -24,7 +24,7 @@ import io
 import itertools
 import timeit #CSK
 
-VERSION = ' V0.0.1.21'
+VERSION = ' V0.0.1.22'
 NAME = 'FindUnmatched'
 ART = 'art-default.jpg'
 ICON = 'icon-FindUnmatched.png'
@@ -83,6 +83,35 @@ def MainMenu(random=0):
 	oc.add(PrefsObject(title='Preferences', thumb=R('icon-prefs.png')))
 	Log.Debug("**********  Ending MainMenu  **********")
 	return oc
+
+####################################################################################################
+# Called by the framework every time a user changes the prefs
+####################################################################################################
+@route(PREFIX + '/ValidatePrefs')
+def ValidatePrefs():
+	# Do we need to reset the extentions?
+	if Prefs['RESET_VALID_EXTENTIONS']:
+		ResetValidExtensions()	
+
+####################################################################################################
+# Reset the Media Extentions to the defaults
+####################################################################################################
+@route(PREFIX + '/ResetValidExtensions')
+def ResetValidExtensions():
+	myHTTPPrefix = 'http://' + Prefs['host'] + '/:/plugins/com.plexapp.plugins.findUnmatch/prefs/'
+	myURL = myHTTPPrefix + 'set?RESET_VALID_EXTENTIONS=0'
+	Log.Debug('Prefs Sending : ' + myURL)
+	SendHTTP(myURL)
+	myURL = myHTTPPrefix + 'set?VALID_EXTENSIONS=.m4v,+.3gp,+.nsv,+.ts,+.ty,+.strm,+.rm,+.rmvb,+.m3u,+.mov,+.qt,+.divx,+.xvid,+.bivx,+.vob,+.nrg,+.img,+.iso,+.pva,+.wmv,+.asf,+.asx,+.ogm,+.m2v,+.avi,+.bin,+.dat,+.dvr-ms,+.mpg,+.mpeg,+.mp4,+.mkv,+.avc,+.vp3,+.svq3,+.nuv,+.viv,+.dv,+.fli,+.flv,+.rar,+.001,+.wpl,+.zip,+.jpg,+.mp3'
+	Log.Debug('Prefs Sending : ' + myURL)
+	SendHTTP(myURL)
+
+####################################################################################################
+# Send an http request to the PMS
+####################################################################################################
+@route(PREFIX + '/SendHTTP')
+def SendHTTP(myURL):
+	u = urllib.urlopen(myURL)
 
 ####################################################################################################
 # Scan Filesystem for a section
