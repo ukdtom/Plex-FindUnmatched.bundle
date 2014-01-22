@@ -10,7 +10,7 @@
 		"id": "ALL_EXTENSIONS",
 		"label": "Scan all extensions. Overrides Valid media extensions",
 		"type": "bool",
-		"default": "false"
+		"default": "False"
 	},
 
 	{
@@ -45,7 +45,15 @@
 		"id": "ENABLE_PLEXIGNORE",
 		"label": "Use .plexignore files. Note: This may slow down the scan.",
 		"type": "bool",
-		"default": "true"
-	}
+		"default": "True"
+	}, 
+
+	{
+		"id": "RESET_EXTENTIONS",
+		"label": "Reset extentions to default",
+		"type": "bool",
+		"default": "False"
+	},
+
 
 ]

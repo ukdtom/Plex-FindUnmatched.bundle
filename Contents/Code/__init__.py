@@ -22,9 +22,8 @@ import time
 import fnmatch
 import io
 import itertools
-import timeit #CSK
 
-VERSION = ' V0.0.1.21'
+VERSION = ' V0.0.1.22'
 NAME = 'FindUnmatched'
 ART = 'art-default.jpg'
 ICON = 'icon-FindUnmatched.png'
@@ -83,6 +82,50 @@ def MainMenu(random=0):
 	oc.add(PrefsObject(title='Preferences', thumb=R('icon-prefs.png')))
 	Log.Debug("**********  Ending MainMenu  **********")
 	return oc
+
+####################################################################################################
+# Called by the framework every time a user changes the prefs
+####################################################################################################
+@route(PREFIX + '/ValidatePrefs')
+def ValidatePrefs():
+	# If the old setting from v0.0.1.20 and before that allowed scanning all extensions, then update to the new setting.
+	if Prefs['VALID_EXTENSIONS'].lower() == 'all': 
+		Log.Debug("VALID_EXTENSIONS=all, setting ALL_EXTENSIONS to True and resetting VALID_EXTENSIONS")
+		SendHTTP('http://' + Prefs['host'] + '/:/plugins/com.plexapp.plugins.findUnmatch/prefs/' + 'set?VALID_EXTENSIONS=')
+		SendHTTP('http://' + Prefs['host'] + '/:/plugins/com.plexapp.plugins.findUnmatch/prefs/' + 'set?ALL_EXTENSIONS=True')
+	# Do we need to reset the extentions?
+	if Prefs['RESET_EXTENTIONS']:
+		ResetExtensions()
+
+####################################################################################################
+# Reset the Media Extentions to the defaults
+####################################################################################################
+@route(PREFIX + '/ResetExtensions')
+def ResetExtensions():
+	Log.Debug("Resetting Extensions in Preferences.")
+	myHTTPPrefix = 'http://' + Prefs['host'] + '/:/plugins/com.plexapp.plugins.findUnmatch/prefs/'
+	myURL = myHTTPPrefix + 'set?RESET_EXTENTIONS=False'
+	Log.Debug('Prefs Sending : ' + myURL)
+	SendHTTP(myURL)
+	myURL = myHTTPPrefix + 'set?VALID_EXTENSIONS='
+	Log.Debug('Prefs Sending : ' + myURL)
+	SendHTTP(myURL)
+	myURL = myHTTPPrefix + 'set?IGNORED_FILES='
+	Log.Debug('Prefs Sending : ' + myURL)
+	SendHTTP(myURL)
+	myURL = myHTTPPrefix + 'set?IGNORED_DIRS='
+	Log.Debug('Prefs Sending : ' + myURL)
+	SendHTTP(myURL)
+	myURL = myHTTPPrefix + 'set?IGNORED_EXTENSIONS='
+	Log.Debug('Prefs Sending : ' + myURL)
+	SendHTTP(myURL)
+
+####################################################################################################
+# Send an http request to the PMS
+####################################################################################################
+@route(PREFIX + '/SendHTTP')
+def SendHTTP(myURL):
+	u = urllib.urlopen(myURL)
 
 ####################################################################################################
 # Scan Filesystem for a section
@@ -318,6 +361,7 @@ def findUnmatchedFiles(files, myMediaPaths):
 @route(PREFIX + '/getPrefs')
 def getPrefs():
 	Log.Debug("*********  Starting to get User Prefs  ***************")
+	if Prefs['VALID_EXTENSIONS'].lower() == 'all': ValidatePrefs()
 	global host
 	host = Prefs['host']
 	if host.find(':') == -1:
