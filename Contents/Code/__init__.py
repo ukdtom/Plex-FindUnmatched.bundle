@@ -22,7 +22,6 @@ import time
 import fnmatch
 import io
 import itertools
-import timeit #CSK
 
 VERSION = ' V0.0.1.22'
 NAME = 'FindUnmatched'
@@ -89,20 +88,35 @@ def MainMenu(random=0):
 ####################################################################################################
 @route(PREFIX + '/ValidatePrefs')
 def ValidatePrefs():
+	# If the old setting from v0.0.1.20 and before that allowed scanning all extensions, then update to the new setting.
+	if Prefs['VALID_EXTENSIONS'].lower() == 'all': 
+		Log.Debug("VALID_EXTENSIONS=all, setting ALL_EXTENSIONS to True and resetting VALID_EXTENSIONS")
+		SendHTTP('http://' + Prefs['host'] + '/:/plugins/com.plexapp.plugins.findUnmatch/prefs/' + 'set?VALID_EXTENSIONS=')
+		SendHTTP('http://' + Prefs['host'] + '/:/plugins/com.plexapp.plugins.findUnmatch/prefs/' + 'set?ALL_EXTENSIONS=True')
 	# Do we need to reset the extentions?
-	if Prefs['RESET_VALID_EXTENTIONS']:
-		ResetValidExtensions()	
+	if Prefs['RESET_EXTENTIONS']:
+		ResetExtensions()
 
 ####################################################################################################
 # Reset the Media Extentions to the defaults
 ####################################################################################################
-@route(PREFIX + '/ResetValidExtensions')
-def ResetValidExtensions():
+@route(PREFIX + '/ResetExtensions')
+def ResetExtensions():
+	Log.Debug("Resetting Extensions in Preferences.")
 	myHTTPPrefix = 'http://' + Prefs['host'] + '/:/plugins/com.plexapp.plugins.findUnmatch/prefs/'
-	myURL = myHTTPPrefix + 'set?RESET_VALID_EXTENTIONS=0'
+	myURL = myHTTPPrefix + 'set?RESET_EXTENTIONS=False'
 	Log.Debug('Prefs Sending : ' + myURL)
 	SendHTTP(myURL)
-	myURL = myHTTPPrefix + 'set?VALID_EXTENSIONS=.m4v,+.3gp,+.nsv,+.ts,+.ty,+.strm,+.rm,+.rmvb,+.m3u,+.mov,+.qt,+.divx,+.xvid,+.bivx,+.vob,+.nrg,+.img,+.iso,+.pva,+.wmv,+.asf,+.asx,+.ogm,+.m2v,+.avi,+.bin,+.dat,+.dvr-ms,+.mpg,+.mpeg,+.mp4,+.mkv,+.avc,+.vp3,+.svq3,+.nuv,+.viv,+.dv,+.fli,+.flv,+.rar,+.001,+.wpl,+.zip,+.jpg,+.mp3'
+	myURL = myHTTPPrefix + 'set?VALID_EXTENSIONS='
+	Log.Debug('Prefs Sending : ' + myURL)
+	SendHTTP(myURL)
+	myURL = myHTTPPrefix + 'set?IGNORED_FILES='
+	Log.Debug('Prefs Sending : ' + myURL)
+	SendHTTP(myURL)
+	myURL = myHTTPPrefix + 'set?IGNORED_DIRS='
+	Log.Debug('Prefs Sending : ' + myURL)
+	SendHTTP(myURL)
+	myURL = myHTTPPrefix + 'set?IGNORED_EXTENSIONS='
 	Log.Debug('Prefs Sending : ' + myURL)
 	SendHTTP(myURL)
 
@@ -347,6 +361,7 @@ def findUnmatchedFiles(files, myMediaPaths):
 @route(PREFIX + '/getPrefs')
 def getPrefs():
 	Log.Debug("*********  Starting to get User Prefs  ***************")
+	if Prefs['VALID_EXTENSIONS'].lower() == 'all': ValidatePrefs()
 	global host
 	host = Prefs['host']
 	if host.find(':') == -1:
