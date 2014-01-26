@@ -1,3 +1,11 @@
+v0.0.1.23
+-Global var myPathList has been done away with. The paths are passed down through the functions to scanFiles(). It was occasionally getting reset by Plex randomly calling MainMenu(). Fixes issue #56
+-Database files in the log no longer encoded for easier reading.
+-Use Prefs[] framework instead of setting global vars.
+-Prefs checking is now done in ValidatePrefs()
+-getPrefs() is now logPrefs() as it only logs the current prefs.
+-Global var PMS_URL is now using the Dict[] framework instead of being a global var.
+
 v0.0.1.22
 -Allow users to reset the media extensions to the defaults
 
