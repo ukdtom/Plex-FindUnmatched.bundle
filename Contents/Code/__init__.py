@@ -23,7 +23,7 @@ import fnmatch
 import io
 import itertools
 
-VERSION = ' V0.0.1.23'
+VERSION = ' V0.0.1.24'
 NAME = 'FindUnmatched'
 ART = 'art-default.jpg'
 ICON = 'icon-FindUnmatched.png'
@@ -50,6 +50,7 @@ def Start():
 	ObjectContainer.view_group = 'List'
 	DirectoryObject.thumb = R(ICON)
 	HTTP.CacheTime = 0
+	ValidatePrefs()
 	logPrefs()
 
 ####################################################################################################

@@ -1,6 +1,9 @@
+v0.0.1.24
+-Opps. If Dict['PMS_URL'] was not set. The plugin wouldn't run.
+
 v0.0.1.23
 -Global var myPathList has been done away with. The paths are passed down through the functions to scanFiles(). It was occasionally getting reset by Plex randomly calling MainMenu(). Fixes issue #56
--Fix detection of and empty filesystem. It was causing an occasional crash.
+-Fix detection of and empty filesystems. It was causing an occasional crash.
 -Database files in the log no longer encoded for easier reading.
 -Use Prefs[] framework instead of setting global vars.
 -Prefs checking is now done in ValidatePrefs()
