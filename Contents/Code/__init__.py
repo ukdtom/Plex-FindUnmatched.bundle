@@ -23,7 +23,7 @@ import fnmatch
 import io
 import itertools
 
-VERSION = ' V0.0.1.24'
+VERSION = ' V0.0.1.25'
 NAME = 'FindUnmatched'
 ART = 'art-default.jpg'
 ICON = 'icon-FindUnmatched.png'
@@ -140,8 +140,7 @@ def scanFiles(title, key, sectiontype, paths):
 	try:
 		Log.Debug("Section type is %s" %(sectiontype))
 		myMediaURL = Dict['PMS_URL'] + key + "/all"
-		Log.Debug("paths: %s" %(paths))
-		Log.Debug("paths[]: %s" %(paths.split(',,,')))
+		Log.Debug("Paths to scan: %s" %(paths.split(',,,')))
 		for myPath in paths.split(',,,'):
 			files.extend(listTree(myPath))
 
@@ -173,8 +172,13 @@ def listTree(top, files=list(), plexignore=[]):
 	Log.Debug("******* Starting ListTree with a path of %s***********" %(top))
 	r = files[:]
 	# If the directory is in the ignore list don't process it.
-	if os.path.basename(os.path.normpath(top)) in Prefs['IGNORED_DIRS']:
-		Log.Debug("Ignoring directory %s" %(top))
+	# If top is a drive ex: N:\ os.path.basename() returns an empty string causing a false positive unless we check for an empty string.
+	if os.path.basename(os.path.normpath(top)).lower() in Prefs['IGNORED_DIRS'].lower() and os.path.basename(os.path.normpath(top)) != '':
+		Log.Debug("Directory is in IGNORED_DIRS: %s" %(top))
+		return r
+	# Check if top without os.path.basename is in the ignore dirs list.
+	elif os.path.normpath(top).lower() in Prefs['IGNORED_DIRS'].lower():
+		Log.Debug("Directory is in IGNORED_DIRS: %s" %(top))
 		return r
 	try:
 		if not os.path.exists(top):
