@@ -1,3 +1,6 @@
+v0.0.1.26
+-Changed icon to follow the std. template from Plex
+
 v0.0.1.25
 -Fixed issue where is media is in a root folder ex. N:\ it would falsely think it was in the ignored directories list. Fixes issue #60
 -Ignored dirs is now case insensitive.
