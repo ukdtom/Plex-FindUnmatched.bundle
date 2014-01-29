@@ -23,7 +23,7 @@ import fnmatch
 import io
 import itertools
 
-VERSION = ' V0.0.1.25'
+VERSION = ' V0.0.1.26'
 NAME = 'FindUnmatched'
 ART = 'art-default.jpg'
 ICON = 'icon-FindUnmatched.png'
