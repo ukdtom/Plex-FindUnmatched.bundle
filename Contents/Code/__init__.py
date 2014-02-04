@@ -2,7 +2,7 @@
 #	This plugin will find unmatched items for Plex Media Server
 #
 #	Made by dane22....A Plex Community member
-#	Contributions by s_razer
+#	Contributions by srazer
 #
 #	Original python code was made by a Plex community member named whymse
 #	and can be found here: 
