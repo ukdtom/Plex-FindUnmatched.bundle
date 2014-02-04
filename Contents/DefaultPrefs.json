@@ -1,14 +1,14 @@
 [
 	{
 		"id":"host",
-		"label":"IP address or hostname + port of PMS machine",
+		"label":"IP address or hostname + port of PMS machine.",
 		"type":"text",
 		"default":"localhost:32400"
 	},
 
 	{
 		"id": "ALL_EXTENSIONS",
-		"label": "Scan all extensions. Overrides Valid media extensions",
+		"label": "Scan all extensions. Overrides valid media extensions.",
 		"type": "bool",
 		"default": "False"
 	},
@@ -22,28 +22,28 @@
 
 	{
 		"id":"IGNORED_FILES",
-		"label":"Files that are ignorred, seperated with a comma, and * is allowed as a wildcard",
+		"label":"Files that are ignorred, seperated with a comma, and * is allowed as a wildcard.",
 		"type":"text",
 		"default":"imdb.nfo, .DS_Store, __db.001, Thumbs.db, .*"
 	},
 
 	{
 		"id":"IGNORED_DIRS",
-		"label":"Ignorred directories, seperated with a comma",
+		"label":"Ignorred directories, seperated with a comma.",
 		"type":"text",
 		"default":".@__thumb, .AppleDouble"
 	},
 
 	{
 		"id":"IGNORED_EXTENSIONS",
-		"label":"Ignorred extentions, seperated with a comma",
+		"label":"Ignorred extentions, seperated with a comma. Doesn't support wildcards.",
 		"type":"text",
-		"default":".srt, .xml, .idx, .jpg, .sub, .nfo, .png, .gif, *.txt, *.rtf, *.m3u, *.rar, *.sfv, *.md5, *.ico, *.doc, *.zip, *.SRT2UTF-8"
+		"default":".srt, .xml, .idx, .jpg, .sub, .nfo, .png, .gif, .txt, .rtf, .m3u, .rar, .sfv, .md5, .ico, .doc, .zip, .SRT2UTF-8"
 	},
 
 	{
 		"id": "ENABLE_PLEXIGNORE",
-		"label": "Use .plexignore files. Note: This may slow down the scan.",
+		"label": "Use .plexignore files.",
 		"type": "bool",
 		"default": "True"
 	}, 
@@ -53,7 +53,7 @@
 		"label": "Reset extentions to default",
 		"type": "bool",
 		"default": "False"
-	},
+	}
 
 
 ]

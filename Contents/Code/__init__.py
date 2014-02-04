@@ -2,7 +2,7 @@
 #	This plugin will find unmatched items for Plex Media Server
 #
 #	Made by dane22....A Plex Community member
-#	Contributions by s_razer
+#	Contributions by srazer
 #
 #	Original python code was made by a Plex community member named whymse
 #	and can be found here: 
@@ -23,7 +23,7 @@ import fnmatch
 import io
 import itertools
 
-VERSION = ' V0.0.1.26'
+VERSION = ' V0.0.1.27'
 NAME = 'FindUnmatched'
 ART = 'art-default.jpg'
 ICON = 'icon-FindUnmatched.png'
@@ -32,6 +32,8 @@ PREFIX = '/applications/findUnmatched'
 myResults = []			# Contains the end results
 bScanStatus = 0			# Current status of the background scan
 initialTimeOut = 10		# When starting a scan, how long in seconds to wait before displaying a status page. Needs to be at least 1.
+display_ignores = True	# When True, files that are ignored will be put in the log
+
 
 # These are no longer defined globally
 #files = []				# Contains list of detected medias from the filesystem of a section
@@ -97,6 +99,14 @@ def ValidatePrefs():
 		host = Prefs['host'] + ':32400'
 		SendHTTP('http://' + host + '/:/plugins/com.plexapp.plugins.findUnmatch/prefs/set?host=' + host)
 	Dict['PMS_URL'] = 'http://%s/library/sections/' %(Prefs['host'])
+	# Verify Server
+	try:
+		urllib.urlopen('http://' + Prefs['host'])
+		Log.Debug("Host: %s verified successfully" %(Prefs['host']))
+	except:
+		Log.Debug("Unable to reach server: %s resetting to localhost:32400" %('http://' + Prefs['host']))
+		SendHTTP('http://localhost:32400/:/plugins/com.plexapp.plugins.findUnmatch/prefs/set?host=localhost:32400')
+
 
 ####################################################################################################
 # Reset the Media Extentions to the defaults
@@ -132,13 +142,12 @@ def SendHTTP(myURL):
 # Scan Filesystem for a section
 ####################################################################################################
 @route(PREFIX + '/scanFiles')
-def scanFiles(title, key, sectiontype, paths):
+def scanFiles(title, key, paths):
 	Log.Debug("*******  Starting scanFiles  ***********")
 	global bScanStatus
 	files = []
 
 	try:
-		Log.Debug("Section type is %s" %(sectiontype))
 		myMediaURL = Dict['PMS_URL'] + key + "/all"
 		Log.Debug("Paths to scan: %s" %(paths.split(',,,')))
 		for myPath in paths.split(',,,'):
@@ -171,6 +180,8 @@ def listTree(top, files=list(), plexignore=[]):
 	global bScanStatusCount
 	Log.Debug("******* Starting ListTree with a path of %s***********" %(top))
 	r = files[:]
+	# Convert IGNORED_FILES to a list. Replace gets rid of any space after the comma
+	ignoredFilesList= Prefs['IGNORED_FILES'].replace(', ',',').split(',')
 	# If the directory is in the ignore list don't process it.
 	# If top is a drive ex: N:\ os.path.basename() returns an empty string causing a false positive unless we check for an empty string.
 	if os.path.basename(os.path.normpath(top)).lower() in Prefs['IGNORED_DIRS'].lower() and os.path.basename(os.path.normpath(top)) != '':
@@ -199,33 +210,58 @@ def listTree(top, files=list(), plexignore=[]):
 		
 		for f in os.listdir(top):
 			pathname = os.path.join(top, f)
-			Log.Debug("Found file #%s named: %s" %(bScanStatusCount, pathname))
 			# If the pathname is a dir, scan into it
 			if os.path.isdir(pathname):
 				r = listTree(pathname, r, plexignore)
 				if Prefs['ENABLE_PLEXIGNORE']: Log.Debug("plexignoreList is: %s" %(plexignoreList))
 			elif os.path.isfile(pathname):
-				bScanStatusCount += 1
-				
+				myext = os.path.splitext(pathname)[1].lower().rstrip("']")
+				fname = os.path.split(pathname)[1].lower()
+
 				#################################
-				# Look to see if the file has a match in plexignoreList
+				# Look for excluded files
 				caught=0
+
+				# Look for filename in IGNORED_FILES. NOTE: Won't catch wildcards, we check wildcards further down.
+				if fname in Prefs['IGNORED_FILES'].lower():
+					if (display_ignores): Log.Debug("Ignoring %s, it is in the ignored files list." %(pathname))
+					continue
+				# Look for file extension in IGNORED_EXTENSIONS
+				elif (myext in Prefs['IGNORED_EXTENSIONS'].lower()):
+					if (display_ignores): Log.Debug("Ignoring %s, it is in the ignored extentions list" %(pathname))
+					continue
+				# Ignore the file if it's extension is not in VALID_EXTENSIONS and ALL_EXTENSIONS is not set to true.
+				elif (myext not in Prefs['VALID_EXTENSIONS'].lower() and not Prefs['ALL_EXTENSIONS']):
+					if (display_ignores): Log.Debug("Ignoring %s, it is not in VALID_EXTENSIONS" %(pathname))
+					continue
+				###############################################
+				# Search the ignoredFilesList for a match against the current file.
+				# Needed for wildcards. Ugly but it works.
+				for ignoredItem in ignoredFilesList:
+					if fnmatch.fnmatch(fname, ignoredItem):
+						if (display_ignores): Log.Debug("File matched %s in the ignored files list" %(ignoredItem))
+						caught=1
+						break
+				if caught: continue
+				###############################################
+				# Look to see if the file has a match in plexignoreList
 				if Prefs['ENABLE_PLEXIGNORE']:
 					for ignore in plexignoreList:
 						if fnmatch.fnmatch(pathname, "*" + ignore + "*"):
-							Log.Debug("Ignoring %s because it matches %s from .plexignore" %(pathname, ignore))
+							if (display_ignores): Log.Debug("Ignoring %s because it matches %s from .plexignore" %(pathname, ignore))
 							caught=1
 							break
-				if caught == 1: continue
-				
+					if caught: continue
 				#################################
-				
+
+				bScanStatusCount += 1
+				Log.Debug("Found valid file #%s named: %s" %(bScanStatusCount, pathname))
 				filename = urllib.unquote(pathname).decode('utf8')
 				composed_filename = unicodedata.normalize('NFKC', filename)
 				filename = urllib.quote(composed_filename.encode('utf8'))
 				r.append(filename)
 			else:
-				Log.Debug("Skipping %s" %(pathname))
+				Log.Debug("Warning: %s was not seen as a file or dir." %(pathname))
 		
 		# Remove last item in plexignore, then reset plexignoreList
 		if Prefs['ENABLE_PLEXIGNORE']: plexignore.pop(); plexignoreList = list(set(itertools.chain.from_iterable(plexignore)))
@@ -303,7 +339,6 @@ def results(title):
 @route(PREFIX + '/findUnmatchedFiles')
 def findUnmatchedFiles(files, myMediaPaths):
 	fname = ""
-	display_ignores = False
 	global myResults
 	global bScanStatusCount
 	myResults = []
@@ -320,45 +355,13 @@ def findUnmatchedFiles(files, myMediaPaths):
 	Log.Debug(files)
 	for filePath in files:
 		# Decode filePath 
+		bScanStatusCount += 1
 		filePath2 = urllib.unquote(filePath).decode('utf8')
 		Log.Debug("Handling file #%s: %s" %(bScanStatusCount, filePath2))
-		bScanStatusCount += 1
 		# If the file is not in the database, figure out what to do.
 		if filePath not in myMediaPaths:
-			myext = os.path.splitext(filePath)[1].lower()
-			cext = myext.rstrip("']")
-			fname = os.path.split(filePath2)[1].lower()
-
-			if (fname in Prefs['IGNORED_FILES'].lower()):
-				# Filename is in ignored files, won't catch wildcards
-				Log.Debug("File is part of ignored files.")
-				continue
-			elif (cext in Prefs['IGNORED_EXTENSIONS'].lower()):
-				# File extension in in ignored extensions
-				Log.Debug("File is part of ignored extentions")
-				continue
-			elif (cext not in Prefs['VALID_EXTENSIONS'].lower() and Prefs['VALID_EXTENSIONS'].lower() != 'all' and not Prefs['ALL_EXTENSIONS']):
-				# If file extension is not in VALID_EXTENSIONS and VALID_EXTENSIONS != 'all', then ignoe the file and ALL_EXTENSIONS is not True
-				# Keeping "VALID_EXTENSIONS.lower() != 'all'" for backwards compatibility for prefs from v0.0.1.20 and before - Chris
-				if (display_ignores):
-					Log.Debug("Ignoring %s" %(filePath2))
-					continue
-			else:
-				###############################################
-				# Search the ignoredFilesList for a match against the current file.
-				# Needed for wildcards. Ugly but it works.
-				caught=0
-				for l in ignoredFilesList:
-					if fnmatch.fnmatch(fname, l):
-						Log.Debug("File matched %s in the ignored files list" %(l))
-						caught=1
-						break
-				###############################################
-				if caught == 1:
-					continue
-				else:
-					Log.Debug("Missing this file")
-					myResults.append(urllib.unquote(filePath))
+			Log.Debug("Missing: %s" %(filePath2))
+			myResults.append(urllib.unquote(filePath))
 	return myResults
 
 ####################################################################################################
@@ -502,17 +505,17 @@ def scanArtistDB(myMediaURL):
 # Start the scanner in a background thread and provide status while running
 ####################################################################################################
 @route(PREFIX + '/backgroundScan')
-def backgroundScan(title, key, sectiontype, random=0, paths=[]):
+def backgroundScan(title='', key='', sectiontype='', random=0, paths=[], statusCheck=0):
 	Log.Debug("******* Starting backgroundScan *********")
 	# Current status of the Background Scanner:
 	# 0=not running, 1=db, 2=filesystem, 3=compare, 4=complete
-	# Errors: 90=filesystem empty, 99=Other Error
+	# Errors: 90=filesystem empty, 91=unknown section type, 99=Other Error
 	global bScanStatus
 	# Current status count (ex. "Show 2 of 31")
 	global bScanStatusCount
 	global bScanStatusCountOf
 	try:
-		if bScanStatus == 0:
+		if bScanStatus == 0 and not statusCheck:
 			bScanStatusCount = 0
 			bScanStatusCountOf = 0
 			# Start scanner
@@ -530,27 +533,34 @@ def backgroundScan(title, key, sectiontype, random=0, paths=[]):
 				if bScanStatus >= 90:
 					Log.Debug("************** Error in thread, stopping wait **************")
 					break
-		# Summary to add to the status
+		# Sometimes a scanStatus check will happen when a scan is running. Usually from something weird in the web client. This prevents the scan from restarting
+		elif bScanStatus == 0 and statusCheck:
+			Log.Debug("backgroundScan statusCheck is set and no scan is running")
+			oc2 = ObjectContainer(title1="Scan is not running.", no_history=True)
+			oc2.add(DirectoryObject(key=Callback(results, title=title), title="Get the last results."))
+			oc2.add(DirectoryObject(key=Callback(MainMenu, random=time.clock()), title="Go to the Main Menu"))
+			return oc2
+
+			# Summary to add to the status
 		summary = "The Plex client will only wait a few seconds for us to work, so we run it in the background. This requires you to keep checking on the status until it is complete. \n\n"
 		if bScanStatus == 1:
 			# Scanning Database
 			summary = summary + "The Database is being scanned. \nScanning " + str(bScanStatusCount) + " of " + str(bScanStatusCountOf) + ". \nPlease wait a few seconds and check the status again."
 			oc2 = ObjectContainer(title1="Scanning Database " + str(bScanStatusCount) + " of " + str(bScanStatusCountOf) + ".", no_history=True)
-			oc2.add(DirectoryObject(key=Callback(backgroundScan, random=time.clock(), title=title, sectiontype=sectiontype, key=key), title="Scanning the database. Check Status.", summary=summary))
-			oc2.add(DirectoryObject(key=Callback(backgroundScan, random=time.clock(), title=title, sectiontype=sectiontype, key=key), title="Scanning " + str(bScanStatusCount) + " of " + str(bScanStatusCountOf), summary=summary))
-			return oc2
+			oc2.add(DirectoryObject(key=Callback(backgroundScan, random=time.clock(), statusCheck=1), title="Scanning the database. Check Status.", summary=summary))
+			oc2.add(DirectoryObject(key=Callback(backgroundScan, random=time.clock(), statusCheck=1), title="Scanning " + str(bScanStatusCount) + " of " + str(bScanStatusCountOf), summary=summary))
 		elif bScanStatus == 2:
 			# Scanning Filesystem
 			summary = summary + "The filesystem is being scanned. \n Scanning file #" + str(bScanStatusCount) + " of about " + str(bScanStatusCountOf) + ".\nPlease wait a few seconds and check the status again."
 			oc2 = ObjectContainer(title1="Scanning Filesystem #" + str(bScanStatusCount) + " of about " + str(bScanStatusCountOf) + ".", no_history=True)
-			oc2.add(DirectoryObject(key=Callback(backgroundScan, random=time.clock(), title=title, sectiontype=sectiontype, key=key), title="Scanning filesystem. Check Status", summary=summary))
-			oc2.add(DirectoryObject(key=Callback(backgroundScan, random=time.clock(), title=title, sectiontype=sectiontype, key=key), title="Scanning file #" + str(bScanStatusCount), summary=summary))
+			oc2.add(DirectoryObject(key=Callback(backgroundScan, random=time.clock(), statusCheck=1), title="Scanning filesystem. Check Status", summary=summary))
+			oc2.add(DirectoryObject(key=Callback(backgroundScan, random=time.clock(), statusCheck=1), title="Scanning file #" + str(bScanStatusCount), summary=summary))
 		elif bScanStatus == 3:
 			# Comparing results
 			summary = summary + "Comparing the results. \n Scanning #" + str(bScanStatusCount) + ".\nPlease wait a few seconds and check the status again."
 			oc2 = ObjectContainer(title1="Comparing #" + str(bScanStatusCount), no_history=True)
-			oc2.add(DirectoryObject(key=Callback(backgroundScan, random=time.clock(), title=title, sectiontype=sectiontype, key=key), title="Comparing the results. Check Status", summary=summary))
-			oc2.add(DirectoryObject(key=Callback(backgroundScan, random=time.clock(), title=title, sectiontype=sectiontype, key=key), title="File #" + str(bScanStatusCount), summary=summary))
+			oc2.add(DirectoryObject(key=Callback(backgroundScan, random=time.clock(), statusCheck=1), title="Comparing the results. Check Status", summary=summary))
+			oc2.add(DirectoryObject(key=Callback(backgroundScan, random=time.clock(), statusCheck=1), title="File #" + str(bScanStatusCount), summary=summary))
 		elif bScanStatus == 4:
 			# See Results
 			summary = "Scan complete, click here to get the results."
@@ -562,11 +572,19 @@ def backgroundScan(title, key, sectiontype, random=0, paths=[]):
 			oc2 = ObjectContainer(title1="Results", no_history=True)
 			oc2.add(DirectoryObject(key=Callback(MainMenu, random=time.clock()), title="*** The filesystem is empty. ***", summary=summary))
 			bScanStatus = 0
+		elif bScanStatus == 91:
+			# scanFiles returned no files
+			summary = "Unknown section type returned."
+			oc2 = ObjectContainer(title1="Results", no_history=True)
+			oc2.add(DirectoryObject(key=Callback(MainMenu, random=time.clock()), title="*** Unknown section type. ***", summary=summary))
+			oc2.add(DirectoryObject(key=Callback(MainMenu, random=time.clock()), title="*** Please submit logs. ***", summary=summary))
+			bScanStatus = 0
 		elif bScanStatus == 99:
 			# Error condition set by scanner
 			summary = "An internal error has occurred. Please check the logs"
 			oc2 = ObjectContainer(title1="Internal Error Detected. Please check the logs",no_history=True)
 			oc2.add(DirectoryObject(key=Callback(MainMenu, random=time.clock()), title="An internal error has occurred.", summary=summary))
+			oc2.add(DirectoryObject(key=Callback(MainMenu, random=time.clock()), title="*** Please submit logs. ***", summary=summary))
 			bScanStatus = 0
 		else:
 			# Unknown status. Should not happen.
@@ -603,10 +621,13 @@ def backgroundScanThread(title, key, sectiontype, paths):
 		if sectiontype == "movie":
 			myMediaPaths = scanMovieDB(myMediaURL)
 			filecount = bScanStatusCount
-		if sectiontype == "artist":
+		elif sectiontype == "artist":
 			myMediaPaths, filecount = scanArtistDB(myMediaURL)
-		if sectiontype == "show":
+		elif sectiontype == "show":
 			myMediaPaths, filecount = scanShowDB(myMediaURL)
+		else:
+			Log.Debug("Error: unknown section type: %s" %(sectiontype))
+			bScanStatus = 91
 		Log.Debug("**********  Section filepath as stored in the database are: %s  *************" %(myMediaPaths))
 		# Stop scanner on error
 		if bScanStatus >= 90: return
@@ -615,7 +636,7 @@ def backgroundScanThread(title, key, sectiontype, paths):
 		bScanStatus = 2
 		bScanStatusCount = 0
 		bScanStatusCountOf = filecount
-		files = scanFiles(title, key, sectiontype, paths)
+		files = scanFiles(title, key, paths)
 		# Stop scanner on error
 		if bScanStatus >= 90: return
 
