@@ -1,3 +1,11 @@
+v0.0.1.27
+-Check for a valid host setting. If the host is unreachable, reset to localhost:32400
+-Sometimes the web client will reload the scanStatus and if the scanner was not running it would trigger a new scan. It now presents a menu to view the last results or go to the main menu.
+-Moved ignored files checking from findUnmatchedFiles() to listTree() to put it alongside checking .plexignore. This helps optimize the code a bit.
+-Cleaned up some unnecessary code.
+-bScanStatusCount will now only count valid files in listTree(). Allows a more accurate count of the expected number of files from the database.
+-Fixed a typo in DefaultPrefs.json and cleaned it up a bit.
+
 v0.0.1.26
 -Changed icon to follow the std. template from Plex
 
