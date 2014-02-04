@@ -53,7 +53,7 @@
 		"label": "Reset extentions to default",
 		"type": "bool",
 		"default": "False"
-	},
+	}
 
 
 ]
