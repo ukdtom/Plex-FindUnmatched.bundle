@@ -1,3 +1,9 @@
+v0.0.1.28
+-Resetting the default extensions is now done with one url request instead of several.
+-Files that start with a dot are no longer ignored by default. There are some movies that start with a dot.
+-There is now an option to ignore files that start with a dot in the Prefs.
+-Added .plexignore to the default ignored files.
+
 v0.0.1.27 
 -Check for a valid host setting. If the host is unreachable, reset to localhost:32400
 -Sometimes the web client will reload the scanStatus and if the scanner was not running it would trigger a new scan. It now presents a menu to view the last results or go to the main menu.
