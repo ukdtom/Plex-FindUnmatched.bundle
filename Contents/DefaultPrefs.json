@@ -24,7 +24,7 @@
 		"id":"IGNORED_FILES",
 		"label":"Files that are ignorred, seperated with a comma, and * is allowed as a wildcard.",
 		"type":"text",
-		"default":"imdb.nfo, .DS_Store, __db.001, Thumbs.db, .*"
+		"default":"imdb.nfo, .DS_Store, __db.001, Thumbs.db, .plexignore"
 	},
 
 	{
@@ -46,6 +46,13 @@
 		"label": "Use .plexignore files.",
 		"type": "bool",
 		"default": "True"
+	}, 
+
+	{
+		"id": "IGNORE_HIDDEN",
+		"label": "Ignore Linux style hidden files. Files that start with a dot. ex: .hidden",
+		"type": "bool",
+		"default": "False"
 	}, 
 
 	{
