@@ -23,7 +23,7 @@ import fnmatch
 import io
 import itertools
 
-VERSION = ' V0.0.1.27'
+VERSION = ' V0.0.1.28'
 NAME = 'FindUnmatched'
 ART = 'art-default.jpg'
 ICON = 'icon-FindUnmatched.png'
@@ -115,19 +115,7 @@ def ValidatePrefs():
 def ResetExtensions():
 	Log.Debug("Resetting Extensions in Preferences.")
 	myHTTPPrefix = 'http://' + Prefs['host'] + '/:/plugins/com.plexapp.plugins.findUnmatch/prefs/'
-	myURL = myHTTPPrefix + 'set?RESET_EXTENTIONS=False'
-	Log.Debug('Prefs Sending : ' + myURL)
-	SendHTTP(myURL)
-	myURL = myHTTPPrefix + 'set?VALID_EXTENSIONS='
-	Log.Debug('Prefs Sending : ' + myURL)
-	SendHTTP(myURL)
-	myURL = myHTTPPrefix + 'set?IGNORED_FILES='
-	Log.Debug('Prefs Sending : ' + myURL)
-	SendHTTP(myURL)
-	myURL = myHTTPPrefix + 'set?IGNORED_DIRS='
-	Log.Debug('Prefs Sending : ' + myURL)
-	SendHTTP(myURL)
-	myURL = myHTTPPrefix + 'set?IGNORED_EXTENSIONS='
+	myURL = myHTTPPrefix + 'set?RESET_EXTENTIONS=False&VALID_EXTENSIONS=&IGNORED_FILES=&IGNORED_DIRS=&IGNORED_EXTENSIONS='
 	Log.Debug('Prefs Sending : ' + myURL)
 	SendHTTP(myURL)
 
@@ -227,19 +215,23 @@ def listTree(top, files=list(), plexignore=[]):
 					if (display_ignores): Log.Debug("Ignoring %s, it is in the ignored files list." %(pathname))
 					continue
 				# Look for file extension in IGNORED_EXTENSIONS
-				elif (myext in Prefs['IGNORED_EXTENSIONS'].lower()):
+				elif (myext in Prefs['IGNORED_EXTENSIONS'].lower()) and myext != '':
 					if (display_ignores): Log.Debug("Ignoring %s, it is in the ignored extentions list" %(pathname))
 					continue
 				# Ignore the file if it's extension is not in VALID_EXTENSIONS and ALL_EXTENSIONS is not set to true.
 				elif (myext not in Prefs['VALID_EXTENSIONS'].lower() and not Prefs['ALL_EXTENSIONS']):
 					if (display_ignores): Log.Debug("Ignoring %s, it is not in VALID_EXTENSIONS" %(pathname))
 					continue
+				# Ignore Linux style hidden files.
+				elif fnmatch.fnmatch(fname, ".*") and Prefs['IGNORE_HIDDEN']:
+					if (display_ignores): Log.Debug("Ignoring hidden file: %s" %(pathname))
+					continue
 				###############################################
 				# Search the ignoredFilesList for a match against the current file.
 				# Needed for wildcards. Ugly but it works.
 				for ignoredItem in ignoredFilesList:
 					if fnmatch.fnmatch(fname, ignoredItem):
-						if (display_ignores): Log.Debug("File matched %s in the ignored files list" %(ignoredItem))
+						if (display_ignores): Log.Debug("Ignoring %s because it matches %s in the ignored files list" %(pathname, ignoredItem))
 						caught=1
 						break
 				if caught: continue
@@ -378,6 +370,7 @@ def logPrefs():
 	Log.Debug("IGNORED_FILES from prefs are : %s" %(Prefs['IGNORED_FILES']))
 	Log.Debug("IGNORED_DIRS from prefs are : %s" %(Prefs['IGNORED_DIRS']))
 	Log.Debug("IGNORED_EXTENSIONS from prefs are : %s" %(Prefs['IGNORED_EXTENSIONS']))
+	Log.Debug("IGNORE_HIDDEN is : %s" %(Prefs['IGNORE_HIDDEN']))
 	Log.Debug("ENABLE_PLEXIGNORE is : %s" %(Prefs['ENABLE_PLEXIGNORE']))
 	Log.Debug("*********  Ending get User Prefs  ***************")
 	return
