@@ -23,7 +23,7 @@ import fnmatch
 import io
 import itertools
 
-VERSION = ' V0.0.1.28'
+VERSION = ' V0.0.1.29'
 NAME = 'FindUnmatched'
 ART = 'art-default.jpg'
 ICON = 'icon-FindUnmatched.png'
@@ -89,23 +89,25 @@ def ValidatePrefs():
 	# If the old setting from v0.0.1.20 and before that allowed scanning all extensions, then update to the new setting.
 	if Prefs['VALID_EXTENSIONS'].lower() == 'all': 
 		Log.Debug("VALID_EXTENSIONS=all, setting ALL_EXTENSIONS to True and resetting VALID_EXTENSIONS")
-		SendHTTP('http://' + Prefs['host'] + '/:/plugins/com.plexapp.plugins.findUnmatch/prefs/set?VALID_EXTENSIONS=')
-		SendHTTP('http://' + Prefs['host'] + '/:/plugins/com.plexapp.plugins.findUnmatch/prefs/set?ALL_EXTENSIONS=True')
+		HTTP.Request('http://' + Prefs['host'] + '/:/plugins/com.plexapp.plugins.findUnmatch/prefs/set?VALID_EXTENSIONS=', immediate=True)
+		HTTP.Request('http://' + Prefs['host'] + '/:/plugins/com.plexapp.plugins.findUnmatch/prefs/set?ALL_EXTENSIONS=True', immediate=True)
 	# Do we need to reset the extentions?
 	if Prefs['RESET_EXTENTIONS']:
 		ResetExtensions()
 	# If the host pref is missing the port, add it.
 	if Prefs['host'].find(':') == -1:
 		host = Prefs['host'] + ':32400'
-		SendHTTP('http://' + host + '/:/plugins/com.plexapp.plugins.findUnmatch/prefs/set?host=' + host)
+		HTTP.Request('http://' + host + '/:/plugins/com.plexapp.plugins.findUnmatch/prefs/set?host=' + host, immediate=True)
 	Dict['PMS_URL'] = 'http://%s/library/sections/' %(Prefs['host'])
 	# Verify Server
 	try:
-		urllib.urlopen('http://' + Prefs['host'])
+		HTTP.Request('http://' + Prefs['host'], immediate=True)
 		Log.Debug("Host: %s verified successfully" %(Prefs['host']))
 	except:
 		Log.Debug("Unable to reach server: %s resetting to localhost:32400" %('http://' + Prefs['host']))
-		SendHTTP('http://localhost:32400/:/plugins/com.plexapp.plugins.findUnmatch/prefs/set?host=localhost:32400')
+		HTTP.Request('http://localhost:32400/:/plugins/com.plexapp.plugins.findUnmatch/prefs/set?host=localhost:32400', immediate=True)
+		
+		HTTP.Request('http://localhost:32400/:/plugins/com.plexapp.plugins.unsupportedappstore/prefs/set?clear_dict=False', immediate=True)
 
 
 ####################################################################################################
@@ -117,14 +119,7 @@ def ResetExtensions():
 	myHTTPPrefix = 'http://' + Prefs['host'] + '/:/plugins/com.plexapp.plugins.findUnmatch/prefs/'
 	myURL = myHTTPPrefix + 'set?RESET_EXTENTIONS=False&VALID_EXTENSIONS=&IGNORED_FILES=&IGNORED_DIRS=&IGNORED_EXTENSIONS='
 	Log.Debug('Prefs Sending : ' + myURL)
-	SendHTTP(myURL)
-
-####################################################################################################
-# Send an http request to the PMS
-####################################################################################################
-@route(PREFIX + '/SendHTTP')
-def SendHTTP(myURL):
-	u = urllib.urlopen(myURL)
+	HTTP.Request(myURL, immediate=True)
 
 ####################################################################################################
 # Scan Filesystem for a section
