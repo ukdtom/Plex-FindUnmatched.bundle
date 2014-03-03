@@ -1,3 +1,6 @@
+v0.0.1.29
+-Replaced urllib.urlopen() with HTTP.Request() from the plugin framework.
+
 v0.0.1.28
 -Resetting the default extensions is now done with one url request instead of several.
 -Files that start with a dot are no longer ignored by default. There are some movies that start with a dot.
