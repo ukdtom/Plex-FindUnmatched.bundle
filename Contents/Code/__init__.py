@@ -106,8 +106,6 @@ def ValidatePrefs():
 	except:
 		Log.Debug("Unable to reach server: %s resetting to localhost:32400" %('http://' + Prefs['host']))
 		HTTP.Request('http://localhost:32400/:/plugins/com.plexapp.plugins.findUnmatch/prefs/set?host=localhost:32400', immediate=True)
-		
-		HTTP.Request('http://localhost:32400/:/plugins/com.plexapp.plugins.unsupportedappstore/prefs/set?clear_dict=False', immediate=True)
 
 
 ####################################################################################################
