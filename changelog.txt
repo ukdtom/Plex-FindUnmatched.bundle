@@ -1,3 +1,8 @@
+<<<<<<< HEAD
+v1.0.0.0
+- Added support for Plex Home mode
+	(When running in Home mode, you must configure authentication towards plex.tv from the settings)
+
 v0.0.1.29
 -Replaced urllib.urlopen() with HTTP.Request() from the plugin framework.
 
@@ -15,6 +20,8 @@ v0.0.1.27
 -bScanStatusCount will now only count valid files in listTree(). Allows a more accurate count of the expected number of files from the database.
 -Fixed a typo in DefaultPrefs.json and cleaned it up a bit.
 
+=======
+>>>>>>> master
 v0.0.1.26
 -Changed icon to follow the std. template from Plex
 

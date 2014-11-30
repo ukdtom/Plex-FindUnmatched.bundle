@@ -5,28 +5,24 @@
 		"type":"text",
 		"default":"localhost:32400"
 	},
-
 	{
 		"id": "ALL_EXTENSIONS",
 		"label": "Scan all extensions. Overrides valid media extensions.",
 		"type": "bool",
 		"default": "False"
 	},
-
 	{
 		"id":"VALID_EXTENSIONS",
 		"label":"Valid media extentions to scan for.",
 		"type":"text",
 		"default":".m4v, .3gp, .nsv, .ts, .ty, .strm, .rm, .rmvb, .m3u, .mov, .qt, .divx, .xvid, .bivx, .vob, .nrg, .img, .iso, .pva, .wmv, .asf, .asx, .ogm, .m2v, .avi, .bin, .dat, .dvr-ms, .mpg, .mpeg, .mp4, .mkv, .avc, .vp3, .svq3, .nuv, .viv, .dv, .fli, .flv, .rar, .001, .wpl, .zip, .jpg, .mp3"
 	},
-
 	{
 		"id":"IGNORED_FILES",
 		"label":"Files that are ignorred, seperated with a comma, and * is allowed as a wildcard.",
 		"type":"text",
 		"default":"imdb.nfo, .DS_Store, __db.001, Thumbs.db, .plexignore"
 	},
-
 	{
 		"id":"IGNORED_DIRS",
 		"label":"Ignorred directories, seperated with a comma.",
@@ -40,27 +36,47 @@
 		"type":"text",
 		"default":".srt, .xml, .idx, .jpg, .sub, .nfo, .png, .gif, .txt, .rtf, .m3u, .rar, .sfv, .md5, .ico, .doc, .zip, .SRT2UTF-8"
 	},
-
 	{
 		"id": "ENABLE_PLEXIGNORE",
 		"label": "Use .plexignore files.",
 		"type": "bool",
 		"default": "True"
 	}, 
-
 	{
 		"id": "IGNORE_HIDDEN",
 		"label": "Ignore Linux style hidden files. Files that start with a dot. ex: .hidden",
 		"type": "bool",
-		"default": "False"
+		"default": "True"
 	}, 
-
 	{
 		"id": "RESET_EXTENTIONS",
 		"label": "Reset extentions to default",
 		"type": "bool",
 		"default": "False"
+	},
+	{
+		"id":"Authenticate",
+		"label":"Authenticate @ plex.tv (Use if running in Home mode)",
+		"type":"bool",
+		"default":"false"
+	},
+	{
+		"id":"Plex_User",
+		"label":"plex.tv User Name",
+		"type":"text",
+		"default":""
+	},
+	{
+		"id":"Plex_Pwd",
+		"label":"plex.tv User Password",
+		"type":"text",
+		"option": "hidden",
+		"default":""
+	},
+	{
+		"id":"NukeToken",
+		"label":"Delete local stored token, and force new one from plex.tv",
+		"type":"bool",
+		"default":"false"
 	}
-
-
 ]
