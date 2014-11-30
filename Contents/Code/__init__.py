@@ -23,37 +23,93 @@ import fnmatch
 import io
 import itertools
 
-VERSION = ' V0.0.1.29'
+<<<<<<< HEAD
+VERSION = ' V1.0.0.0'
+=======
+VERSION = ' V0.0.1.26'
+>>>>>>> master
 NAME = 'FindUnmatched'
 ART = 'art-default.jpg'
 ICON = 'icon-FindUnmatched.png'
+
 PREFIX = '/applications/findUnmatched'
+MYHEADER = {}
+APPGUID = '7608cf36-742b-11e4-8b39-00089b13a0b2'
+DESCRIPTION = 'Find medias missed by Plex scanners'
 
 myResults = []			# Contains the end results
 bScanStatus = 0			# Current status of the background scan
 initialTimeOut = 10		# When starting a scan, how long in seconds to wait before displaying a status page. Needs to be at least 1.
+<<<<<<< HEAD
 display_ignores = True	# When True, files that are ignored will be put in the log
-
+=======
 
 # These are no longer defined globally
 #files = []				# Contains list of detected medias from the filesystem of a section
 #myMediaPaths = []		# Contains filepath of selected section medias from the database
 #myPathList = {}			# Contains dict of section keys and file-path
+>>>>>>> master
 
 ####################################################################################################
 # Start function
 ####################################################################################################
 def Start():
-	print("********  Started %s on %s  **********" %(NAME  + VERSION, Platform.OS))
+#	print("********  Started %s on %s  **********" %(NAME  + VERSION, Platform.OS))
 	Log.Debug("*******  Started %s on %s  ***********" %(NAME  + VERSION, Platform.OS))
+	global MYHEADER
 	Plugin.AddViewGroup('List', viewMode='List', mediaType='items')
 	ObjectContainer.art = R(ART)
 	ObjectContainer.title1 = NAME  + VERSION
 	ObjectContainer.view_group = 'List'
 	DirectoryObject.thumb = R(ICON)
 	HTTP.CacheTime = 0
+<<<<<<< HEAD
+	MYHEADER['X-Plex-Token'] = getToken()
 	ValidatePrefs()
 	logPrefs()
+
+#********** Get token from plex.tv *********
+''' This will return a valid token, that can be used for authenticating if needed, to be inserted into the header '''
+# DO NOT APPEND THE TOKEN TO THE URL...IT MIGHT BE LOGGED....INSERT INTO THE HEADER INSTEAD
+@route(PREFIX + '/getToken')
+def getToken():
+	Log.Debug('Starting to get the token')
+	if Prefs['Authenticate']:
+		# Start by checking, if we already got a token
+		if 'authentication_token' in Dict and Dict['authentication_token'] != 'NuKeMe':
+			Log.Debug('Got a token from local storage')
+			return Dict['authentication_token']
+		else:
+			Log.Debug('Need to generate a token first from plex.tv')
+			userName = Prefs['Plex_User']
+			userPwd = Prefs['Plex_Pwd']
+			myUrl = 'https://plex.tv/users/sign_in.json'
+			# Create the authentication string
+			base64string = String.Base64Encode('%s:%s' % (userName, userPwd))
+			# Create the header
+			MYAUTHHEADER= {}
+			MYAUTHHEADER['X-Plex-Product'] = DESCRIPTION
+			MYAUTHHEADER['X-Plex-Client-Identifier'] = APPGUID
+			MYAUTHHEADER['X-Plex-Version'] = VERSION
+			MYAUTHHEADER['Authorization'] = 'Basic ' + base64string
+			MYAUTHHEADER['X-Plex-Device-Name'] = NAME
+			# Send the request
+			try:
+				httpResponse = HTTP.Request(myUrl, headers=MYAUTHHEADER, method='POST')
+				myToken = JSON.ObjectFromString(httpResponse.content)['user']['authentication_token']
+				Log.Debug('Response from plex.tv was : %s' %(httpResponse.headers["status"]))
+			except:
+				Log.Critical('Exception happend when trying to get a token from plex.tv')
+				Log.Critical('Returned answer was %s' %httpResponse.content)
+				Log.Critical('Status was: %s' %httpResponse.headers) 			
+			Dict['authentication_token'] = myToken
+			Dict.Save()
+	else:
+			Log.Debug('Authentication disabled')
+=======
+	ValidatePrefs()
+	logPrefs()
+>>>>>>> master
 
 ####################################################################################################
 # Main menu
@@ -63,9 +119,14 @@ def Start():
 def MainMenu(random=0):
 	Log.Debug("**********  Starting MainMenu  **********")
 	oc = ObjectContainer()
+<<<<<<< HEAD
+	try:
+		sections = XML.ElementFromURL(Dict['PMS_URL'], headers=MYHEADER).xpath('//Directory')
+=======
 
 	try:
 		sections = XML.ElementFromURL(Dict['PMS_URL']).xpath('//Directory')
+>>>>>>> master
 		for section in sections:
 			sectiontype = section.get('type')
 			if sectiontype != "photo":
@@ -86,27 +147,51 @@ def MainMenu(random=0):
 ####################################################################################################
 @route(PREFIX + '/ValidatePrefs')
 def ValidatePrefs():
+	if Prefs['NukeToken']:
+		# My master wants to nuke the local store
+		Log.Debug('Removing Token from local storage')
+		Dict['authentication_token'] = 'NuKeMe'
+		Dict.Save()
+	# Lets get the token again, in case credentials are switched, or token is deleted
+	global MYHEADER
+	MYHEADER['X-Plex-Token'] = getToken()
+	if Prefs['NukeToken']:
+		Log.Debug('Resetting flag to nuke token')
+		# My master has nuked the local store, so reset the prefs flag
+		myHTTPPrefix = 'http://127.0.0.1:32400/:/plugins/com.plexapp.plugins.findUnmatch/prefs/'
+		myURL = myHTTPPrefix + 'set?NukeToken=0'
+		Log.Debug('Prefs Sending : ' + myURL)
+		HTTP.Request(myURL, immediate=True, headers=MYHEADER)
 	# If the old setting from v0.0.1.20 and before that allowed scanning all extensions, then update to the new setting.
 	if Prefs['VALID_EXTENSIONS'].lower() == 'all': 
 		Log.Debug("VALID_EXTENSIONS=all, setting ALL_EXTENSIONS to True and resetting VALID_EXTENSIONS")
-		HTTP.Request('http://' + Prefs['host'] + '/:/plugins/com.plexapp.plugins.findUnmatch/prefs/set?VALID_EXTENSIONS=', immediate=True)
-		HTTP.Request('http://' + Prefs['host'] + '/:/plugins/com.plexapp.plugins.findUnmatch/prefs/set?ALL_EXTENSIONS=True', immediate=True)
+<<<<<<< HEAD
+		HTTP.Request('http://' + Prefs['host'] + '/:/plugins/com.plexapp.plugins.findUnmatch/prefs/set?VALID_EXTENSIONS=', immediate=True, headers=MYHEADER)
+		HTTP.Request('http://' + Prefs['host'] + '/:/plugins/com.plexapp.plugins.findUnmatch/prefs/set?ALL_EXTENSIONS=True', immediate=True, headers=MYHEADER)
+=======
+		SendHTTP('http://' + Prefs['host'] + '/:/plugins/com.plexapp.plugins.findUnmatch/prefs/set?VALID_EXTENSIONS=')
+		SendHTTP('http://' + Prefs['host'] + '/:/plugins/com.plexapp.plugins.findUnmatch/prefs/set?ALL_EXTENSIONS=True')
+>>>>>>> master
 	# Do we need to reset the extentions?
 	if Prefs['RESET_EXTENTIONS']:
 		ResetExtensions()
 	# If the host pref is missing the port, add it.
 	if Prefs['host'].find(':') == -1:
 		host = Prefs['host'] + ':32400'
-		HTTP.Request('http://' + host + '/:/plugins/com.plexapp.plugins.findUnmatch/prefs/set?host=' + host, immediate=True)
+<<<<<<< HEAD
+		HTTP.Request('http://' + host + '/:/plugins/com.plexapp.plugins.findUnmatch/prefs/set?host=' + host, immediate=True, headers=MYHEADER)
 	Dict['PMS_URL'] = 'http://%s/library/sections/' %(Prefs['host'])
 	# Verify Server
 	try:
 		HTTP.Request('http://' + Prefs['host'], immediate=True)
 		Log.Debug("Host: %s verified successfully" %(Prefs['host']))
 	except:
-		Log.Debug("Unable to reach server: %s resetting to localhost:32400" %('http://' + Prefs['host']))
-		HTTP.Request('http://localhost:32400/:/plugins/com.plexapp.plugins.findUnmatch/prefs/set?host=localhost:32400', immediate=True)
-
+		Log.Debug("Unable to reach server: %s resetting to 127.0.0.1:32400" %('http://' + Prefs['host']))
+		HTTP.Request('http://127.0.0.1:32400/:/plugins/com.plexapp.plugins.findUnmatch/prefs/set?host=127.0.0.1:32400', immediate=True, headers=MYHEADER)
+=======
+		SendHTTP('http://' + host + '/:/plugins/com.plexapp.plugins.findUnmatch/prefs/set?host=' + host)
+	Dict['PMS_URL'] = 'http://%s/library/sections/' %(Prefs['host'])
+>>>>>>> master
 
 ####################################################################################################
 # Reset the Media Extentions to the defaults
@@ -117,18 +202,25 @@ def ResetExtensions():
 	myHTTPPrefix = 'http://' + Prefs['host'] + '/:/plugins/com.plexapp.plugins.findUnmatch/prefs/'
 	myURL = myHTTPPrefix + 'set?RESET_EXTENTIONS=False&VALID_EXTENSIONS=&IGNORED_FILES=&IGNORED_DIRS=&IGNORED_EXTENSIONS='
 	Log.Debug('Prefs Sending : ' + myURL)
-	HTTP.Request(myURL, immediate=True)
+	HTTP.Request(myURL, immediate=True, headers=MYHEADER)
 
 ####################################################################################################
 # Scan Filesystem for a section
 ####################################################################################################
 @route(PREFIX + '/scanFiles')
+<<<<<<< HEAD
 def scanFiles(title, key, paths):
+=======
+def scanFiles(title, key, sectiontype, paths):
+>>>>>>> master
 	Log.Debug("*******  Starting scanFiles  ***********")
 	global bScanStatus
 	files = []
-
 	try:
+<<<<<<< HEAD
+=======
+		Log.Debug("Section type is %s" %(sectiontype))
+>>>>>>> master
 		myMediaURL = Dict['PMS_URL'] + key + "/all"
 		Log.Debug("Paths to scan: %s" %(paths.split(',,,')))
 		for myPath in paths.split(',,,'):
@@ -187,8 +279,7 @@ def listTree(top, files=list(), plexignore=[]):
 			# Collapse plexignore into one table with itertools.chain.from_iterable()
 			# and remove duplicates with set() and convert back to list with list()
 			plexignoreList = list(set(itertools.chain.from_iterable(plexignore)))
-			Log.Debug("plexignoreList is: %s" %(plexignoreList))
-		
+			Log.Debug("plexignoreList is: %s" %(plexignoreList))		
 		for f in os.listdir(top):
 			pathname = os.path.join(top, f)
 			# If the pathname is a dir, scan into it
@@ -198,11 +289,10 @@ def listTree(top, files=list(), plexignore=[]):
 			elif os.path.isfile(pathname):
 				myext = os.path.splitext(pathname)[1].lower().rstrip("']")
 				fname = os.path.split(pathname)[1].lower()
-
 				#################################
 				# Look for excluded files
 				caught=0
-
+<<<<<<< HEAD
 				# Look for filename in IGNORED_FILES. NOTE: Won't catch wildcards, we check wildcards further down.
 				if fname in Prefs['IGNORED_FILES'].lower():
 					if (display_ignores): Log.Debug("Ignoring %s, it is in the ignored files list." %(pathname))
@@ -230,6 +320,8 @@ def listTree(top, files=list(), plexignore=[]):
 				if caught: continue
 				###############################################
 				# Look to see if the file has a match in plexignoreList
+=======
+>>>>>>> master
 				if Prefs['ENABLE_PLEXIGNORE']:
 					for ignore in plexignoreList:
 						if fnmatch.fnmatch(pathname, "*" + ignore + "*"):
@@ -246,8 +338,7 @@ def listTree(top, files=list(), plexignore=[]):
 				filename = urllib.quote(composed_filename.encode('utf8'))
 				r.append(filename)
 			else:
-				Log.Debug("Warning: %s was not seen as a file or dir." %(pathname))
-		
+				Log.Debug("Warning: %s was not seen as a file or dir." %(pathname))		
 		# Remove last item in plexignore, then reset plexignoreList
 		if Prefs['ENABLE_PLEXIGNORE']: plexignore.pop(); plexignoreList = list(set(itertools.chain.from_iterable(plexignore)))
 		return r
@@ -264,7 +355,6 @@ def listTree(top, files=list(), plexignore=[]):
 def readPlexignore(file):
 	Log.Debug("*******  Starting readPlexignore  ***********")
 	plexignore=[]
-
 	# Open and read .plexignore file
 	f = io.open(file); 	fileIn = f.readlines(); f.close
 	for line in fileIn:
@@ -287,7 +377,6 @@ def results(title):
 	Log.Debug("*******  Starting results  ***********")
 	global bScanStatus
 	global myResults
-
 	Log.Info("*********************** The END RESULT Start *****************")
 	Log.Info("****** Found %d Items missing **************" %(len(myResults)))
 	Log.Info("The following files are missing in Plex database from section named: %s:" %(title))
@@ -312,7 +401,6 @@ def results(title):
 		title = str(counter) + ": " + title
 		counter += 1
 		oc2.add(DirectoryObject(key=Callback(MainMenu, random=time.clock()), title=title, summary="Unmatched file: \n\n"+title2))
-
 	# Reset the scanner status
 	bScanStatus = 0
 	Log.Debug("*******  Ending results  ***********")
@@ -327,12 +415,13 @@ def findUnmatchedFiles(files, myMediaPaths):
 	global myResults
 	global bScanStatusCount
 	myResults = []
-
 	Log.Debug("******* Start findUnmatchedFiles ******")
-
 	# Convert IGNORED_FILES to a list. Replace gets rid of any space after the comma
 	ignoredFilesList= Prefs['IGNORED_FILES'].replace(', ',',').split(',')
+<<<<<<< HEAD
+=======
 
+>>>>>>> master
 	Log.Debug("*********************** Database paths: *******************************************")
 	Log.Debug(myMediaPaths)
 	Log.Debug("*********************** FileSystem Paths: *****************************************")
@@ -345,8 +434,45 @@ def findUnmatchedFiles(files, myMediaPaths):
 		Log.Debug("Handling file #%s: %s" %(bScanStatusCount, filePath2))
 		# If the file is not in the database, figure out what to do.
 		if filePath not in myMediaPaths:
+<<<<<<< HEAD
 			Log.Debug("Missing: %s" %(filePath2))
 			myResults.append(urllib.unquote(filePath))
+=======
+			myext = os.path.splitext(filePath)[1].lower()
+			cext = myext.rstrip("']")
+			fname = os.path.split(filePath2)[1].lower()
+
+			if (fname in Prefs['IGNORED_FILES'].lower()):
+				# Filename is in ignored files, won't catch wildcards
+				Log.Debug("File is part of ignored files.")
+				continue
+			elif (cext in Prefs['IGNORED_EXTENSIONS'].lower()):
+				# File extension in in ignored extensions
+				Log.Debug("File is part of ignored extentions")
+				continue
+			elif (cext not in Prefs['VALID_EXTENSIONS'].lower() and Prefs['VALID_EXTENSIONS'].lower() != 'all' and not Prefs['ALL_EXTENSIONS']):
+				# If file extension is not in VALID_EXTENSIONS and VALID_EXTENSIONS != 'all', then ignoe the file and ALL_EXTENSIONS is not True
+				# Keeping "VALID_EXTENSIONS.lower() != 'all'" for backwards compatibility for prefs from v0.0.1.20 and before - Chris
+				if (display_ignores):
+					Log.Debug("Ignoring %s" %(filePath2))
+					continue
+			else:
+				###############################################
+				# Search the ignoredFilesList for a match against the current file.
+				# Needed for wildcards. Ugly but it works.
+				caught=0
+				for l in ignoredFilesList:
+					if fnmatch.fnmatch(fname, l):
+						Log.Debug("File matched %s in the ignored files list" %(l))
+						caught=1
+						break
+				###############################################
+				if caught == 1:
+					continue
+				else:
+					Log.Debug("Missing this file")
+					myResults.append(urllib.unquote(filePath))
+>>>>>>> master
 	return myResults
 
 ####################################################################################################
@@ -363,7 +489,10 @@ def logPrefs():
 	Log.Debug("IGNORED_FILES from prefs are : %s" %(Prefs['IGNORED_FILES']))
 	Log.Debug("IGNORED_DIRS from prefs are : %s" %(Prefs['IGNORED_DIRS']))
 	Log.Debug("IGNORED_EXTENSIONS from prefs are : %s" %(Prefs['IGNORED_EXTENSIONS']))
+<<<<<<< HEAD
 	Log.Debug("IGNORE_HIDDEN is : %s" %(Prefs['IGNORE_HIDDEN']))
+=======
+>>>>>>> master
 	Log.Debug("ENABLE_PLEXIGNORE is : %s" %(Prefs['ENABLE_PLEXIGNORE']))
 	Log.Debug("*********  Ending get User Prefs  ***************")
 	return
@@ -381,7 +510,7 @@ def scanMovieDB(myMediaURL):
 	myMediaPaths = []
 	myTmpPath = []
 	try:
-		myMedias = XML.ElementFromURL(myMediaURL).xpath('//Video')
+		myMedias = XML.ElementFromURL(myMediaURL, headers=MYHEADER).xpath('//Video')
 		bScanStatusCountOf = len(myMedias)
 		for myMedia in myMedias:
 			title = myMedia.get('title')			
@@ -414,16 +543,15 @@ def scanShowDB(myMediaURL):
 	myMediaPaths = []
 	bScanStatusCount = 0
 	filecount = 0
-
 	try:
-		myMedias = XML.ElementFromURL(myMediaURL).xpath('//Directory')
+		myMedias = XML.ElementFromURL(myMediaURL, headers=MYHEADER).xpath('//Directory')
 		bScanStatusCountOf = len(myMedias)
 		for myMedia in myMedias:
 			bScanStatusCount += 1
 			ratingKey = myMedia.get("ratingKey")
 			myURL = "http://" + Prefs['host'] + "/library/metadata/" + ratingKey + "/allLeaves"
 			Log.Debug("Show %s of %s with a RatingKey of %s at myURL: %s" %(bScanStatusCount, bScanStatusCountOf, ratingKey, myURL))
-			myMedias2 = XML.ElementFromURL(myURL).xpath('//Video')
+			myMedias2 = XML.ElementFromURL(myURL, headers=MYHEADER).xpath('//Video')
 			for myMedia2 in myMedias2:
 				title = myMedia2.get("grandparentTitle") + "/" + myMedia2.get("title")
 				# Using three commas as one has issues with some filenames.
@@ -457,14 +585,14 @@ def scanArtistDB(myMediaURL):
 	myMediaPaths = []
 	filecount = 0
 	try:
-		myMedias = XML.ElementFromURL(myMediaURL).xpath('//Directory')
+		myMedias = XML.ElementFromURL(myMediaURL, headers=MYHEADER).xpath('//Directory')
 		bScanStatusCountOf = len(myMedias)
 		for myMedia in myMedias:
 			bScanStatusCount += 1
 			ratingKey = myMedia.get("ratingKey")
 			myURL = "http://" + Prefs['host'] + "/library/metadata/" + ratingKey + "/allLeaves"
 			Log.Debug("%s of %s with a RatingKey of %s at myURL: %s" %(bScanStatusCount, bScanStatusCountOf, ratingKey, myURL))
-			myMedias2 = XML.ElementFromURL(myURL).xpath('//Track')
+			myMedias2 = XML.ElementFromURL(myURL, headers=MYHEADER).xpath('//Track')
 			for myMedia2 in myMedias2:
 				title = myMedia2.get("grandparentTitle") + "/" + myMedia2.get("title")
 				# This returns a double backslash for every backslash
@@ -491,7 +619,11 @@ def scanArtistDB(myMediaURL):
 # Start the scanner in a background thread and provide status while running
 ####################################################################################################
 @route(PREFIX + '/backgroundScan')
+<<<<<<< HEAD
 def backgroundScan(title='', key='', sectiontype='', random=0, paths=[], statusCheck=0):
+=======
+def backgroundScan(title, key, sectiontype, random=0, paths=[]):
+>>>>>>> master
 	Log.Debug("******* Starting backgroundScan *********")
 	# Current status of the Background Scanner:
 	# 0=not running, 1=db, 2=filesystem, 3=compare, 4=complete
@@ -526,7 +658,6 @@ def backgroundScan(title='', key='', sectiontype='', random=0, paths=[], statusC
 			oc2.add(DirectoryObject(key=Callback(results, title=title), title="Get the last results."))
 			oc2.add(DirectoryObject(key=Callback(MainMenu, random=time.clock()), title="Go to the Main Menu"))
 			return oc2
-
 			# Summary to add to the status
 		summary = "The Plex client will only wait a few seconds for us to work, so we run it in the background. This requires you to keep checking on the status until it is complete. \n\n"
 		if bScanStatus == 1:
@@ -592,17 +723,18 @@ def backgroundScanThread(title, key, sectiontype, paths):
 	Log.Debug("*******  Starting backgroundScanThread  ***********")
 	global bScanStatus
 	global bScanStatusCount
-	global bScanStatusCountOf
-	
+	global bScanStatusCountOf	
 	try:
 		bScanStatus = 1
 		# Print the latest Prefs to the log file.
 		logPrefs()
+<<<<<<< HEAD
+=======
 
+>>>>>>> master
 		Log.Debug("Section type is %s" %(sectiontype))
 		myMediaURL = Dict['PMS_URL'] + key + "/all"
 		Log.Debug("Path to medias in section is %s" %(myMediaURL))
-
 		# Scan the database based on the type of section
 		if sectiontype == "movie":
 			myMediaPaths = scanMovieDB(myMediaURL)
@@ -617,28 +749,34 @@ def backgroundScanThread(title, key, sectiontype, paths):
 		Log.Debug("**********  Section filepath as stored in the database are: %s  *************" %(myMediaPaths))
 		# Stop scanner on error
 		if bScanStatus >= 90: return
-
 		# Scan the filesystem
 		bScanStatus = 2
 		bScanStatusCount = 0
 		bScanStatusCountOf = filecount
+<<<<<<< HEAD
 		files = scanFiles(title, key, paths)
+=======
+		files = scanFiles(title, key, sectiontype, paths)
+>>>>>>> master
 		# Stop scanner on error
 		if bScanStatus >= 90: return
-
 		# Find unmatched files
 		bScanStatus = 3
 		bScanStatusCount = 0
 		findUnmatchedFiles(files=files, myMediaPaths=myMediaPaths)
 		# Stop scanner on error
 		if bScanStatus >= 90: return
-
 		# Allow status menu to give give the results
 		bScanStatus = 4
+<<<<<<< HEAD
+		Log.Debug("*******  Ending backgroundScanThread  ***********")
+		return
+=======
 
 		Log.Debug("*******  Ending backgroundScanThread  ***********")
 		return
 
+>>>>>>> master
 	except:
 		Log.Critical("Exception happened in backgroundScanThread")
 		bScanStatus = 99
