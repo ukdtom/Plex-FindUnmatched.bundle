@@ -29,7 +29,6 @@
 		"type":"text",
 		"default":".@__thumb, .AppleDouble"
 	},
-
 	{
 		"id":"IGNORED_EXTENSIONS",
 		"label":"Ignorred extentions, seperated with a comma. Doesn't support wildcards.",
