@@ -1,4 +1,7 @@
-<<<<<<< HEAD
+V1.0.0.1
+- Github fooled me a bit here...
+  Fixed that
+
 v1.0.0.0
 - Added support for Plex Home mode
 	(When running in Home mode, you must configure authentication towards plex.tv from the settings)
