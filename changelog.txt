@@ -1,3 +1,6 @@
+V1.0.0.2
+- Fixed issue, causing unmatched items to show up twice
+
 V1.0.0.1
 - Github fooled me a bit here...
   Fixed that
