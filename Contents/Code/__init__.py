@@ -24,7 +24,7 @@ import io
 import itertools
 
 
-VERSION = ' V1.0.0.1'
+VERSION = ' V1.0.0.2'
 NAME = 'FindUnmatched'
 ART = 'art-default.jpg'
 ICON = 'icon-FindUnmatched.png'
@@ -43,7 +43,7 @@ display_ignores = True	# When True, files that are ignored will be put in the lo
 # Start function
 ####################################################################################################
 def Start():
-	print("********  Started %s on %s  **********" %(NAME  + VERSION, Platform.OS))
+#	print("********  Started %s on %s  **********" %(NAME  + VERSION, Platform.OS))
 	Log.Debug("*******  Started %s on %s  ***********" %(NAME  + VERSION, Platform.OS))
 	global MYHEADER
 	Plugin.AddViewGroup('List', viewMode='List', mediaType='items')
@@ -52,7 +52,6 @@ def Start():
 	ObjectContainer.view_group = 'List'
 	DirectoryObject.thumb = R(ICON)
 	HTTP.CacheTime = 0
-#	MYHEADER['X-Plex-Token'] = getToken()
 	ValidatePrefs()
 	logPrefs()
 
@@ -393,8 +392,7 @@ def findUnmatchedFiles(files, myMediaPaths):
 		Log.Debug("Handling file #%s: %s" %(bScanStatusCount, filePath2))
 		# If the file is not in the database, figure out what to do.
 		if filePath not in myMediaPaths:
-			Log.Debug("Missing: %s" %(filePath2))
-			myResults.append(urllib.unquote(filePath))
+			Log.Debug("Missing: %s ???" %(filePath2))
 			myext = os.path.splitext(filePath)[1].lower()
 			cext = myext.rstrip("']")
 			fname = os.path.split(filePath2)[1].lower()
