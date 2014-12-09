@@ -24,7 +24,7 @@ import io
 import itertools
 
 
-VERSION = ' V1.0.0.3 ********* DEV **********'
+VERSION = ' V1.0.0.3'
 NAME = 'FindUnmatched'
 ART = 'art-default.jpg'
 ICON = 'icon-FindUnmatched.png'
