@@ -24,7 +24,7 @@ import io
 import itertools
 
 
-VERSION = ' V1.0.0.2'
+VERSION = ' V1.0.0.3 ********* DEV **********'
 NAME = 'FindUnmatched'
 ART = 'art-default.jpg'
 ICON = 'icon-FindUnmatched.png'
@@ -52,6 +52,7 @@ def Start():
 	ObjectContainer.view_group = 'List'
 	DirectoryObject.thumb = R(ICON)
 	HTTP.CacheTime = 0
+	getToken()
 	ValidatePrefs()
 	logPrefs()
 
@@ -65,7 +66,8 @@ def getToken():
 		# Start by checking, if we already got a token
 		if 'authentication_token' in Dict and Dict['authentication_token'] != 'NuKeMe':
 			Log.Debug('Got a token from local storage')
-			return Dict['authentication_token']
+			global MYHEADER
+			MYHEADER['X-Plex-Token'] = Dict['authentication_token']
 		else:
 			Log.Debug('Need to generate a token first from plex.tv')
 			userName = Prefs['Plex_User']
@@ -105,7 +107,7 @@ def MainMenu(random=0):
 	Log.Debug("**********  Starting MainMenu  **********")
 	oc = ObjectContainer()
 	try:
-		sections = XML.ElementFromURL(Dict['PMS_URL'], headers=MYHEADER).xpath('//Directory')
+		sections = XML.ElementFromURL('http://127.0.0.1:32400/library/sections', headers=MYHEADER).xpath('//Directory')
 		for section in sections:
 			sectiontype = section.get('type')
 			if sectiontype != "photo":
@@ -128,14 +130,14 @@ def MainMenu(random=0):
 ####################################################################################################
 @route(PREFIX + '/ValidatePrefs')
 def ValidatePrefs():
-#	if Prefs['NukeToken']:
+	if Prefs['NukeToken']:
 		# My master wants to nuke the local store
-#		Log.Debug('Removing Token from local storage')
-#		Dict['authentication_token'] = 'NuKeMe'
-#		Dict.Save()
+		Log.Debug('Removing Token from local storage')
+		Dict['authentication_token'] = 'NuKeMe'
+		Dict.Save()
 	# Lets get the token again, in case credentials are switched, or token is deleted
 	global MYHEADER
-	MYHEADER['X-Plex-Token'] = getToken()
+#	MYHEADER['X-Plex-Token'] = getToken()
 	if Prefs['NukeToken']:
 		Log.Debug('Resetting flag to nuke token')
 		# My master has nuked the local store, so reset the prefs flag
@@ -143,26 +145,20 @@ def ValidatePrefs():
 		myURL = myHTTPPrefix + 'set?NukeToken=0'
 		Log.Debug('Prefs Sending : ' + myURL)
 		HTTP.Request(myURL, immediate=True, headers=MYHEADER)
+		# Get new token
+		getToken()
+		
+#		MYHEADER['X-Plex-Token'] = getToken()
 	# If the old setting from v0.0.1.20 and before that allowed scanning all extensions, then update to the new setting.
 	if Prefs['VALID_EXTENSIONS'].lower() == 'all': 
 		Log.Debug("VALID_EXTENSIONS=all, setting ALL_EXTENSIONS to True and resetting VALID_EXTENSIONS")
-		HTTP.Request('http://' + Prefs['host'] + '/:/plugins/com.plexapp.plugins.findUnmatch/prefs/set?VALID_EXTENSIONS=', immediate=True, headers=MYHEADER)
-		HTTP.Request('http://' + Prefs['host'] + '/:/plugins/com.plexapp.plugins.findUnmatch/prefs/set?ALL_EXTENSIONS=True', immediate=True, headers=MYHEADER)
+		HTTP.Request('http://127.0.0.1:32400/:/plugins/com.plexapp.plugins.findUnmatch/prefs/set?VALID_EXTENSIONS=', immediate=True, headers=MYHEADER)
+		HTTP.Request('http://127.0.0.1:32400/:/plugins/com.plexapp.plugins.findUnmatch/prefs/set?ALL_EXTENSIONS=True', immediate=True, headers=MYHEADER)
 	# Do we need to reset the extentions?
 	if Prefs['RESET_EXTENTIONS']:
 		ResetExtensions()
-	# If the host pref is missing the port, add it.
-	if Prefs['host'].find(':') == -1:
-		host = Prefs['host'] + ':32400'
-		HTTP.Request('http://' + host + '/:/plugins/com.plexapp.plugins.findUnmatch/prefs/set?host=' + host, immediate=True, headers=MYHEADER)
-	Dict['PMS_URL'] = 'http://%s/library/sections/' %(Prefs['host'])
-	# Verify Server
-	try:
-		HTTP.Request('http://' + Prefs['host'], immediate=True)
-		Log.Debug("Host: %s verified successfully" %(Prefs['host']))
-	except:
-		Log.Debug("Unable to reach server: %s resetting to 127.0.0.1:32400" %('http://' + Prefs['host']))
-		HTTP.Request('http://127.0.0.1:32400/:/plugins/com.plexapp.plugins.findUnmatch/prefs/set?host=127.0.0.1:32400', immediate=True, headers=MYHEADER)
+	
+
 
 ####################################################################################################
 # Reset the Media Extentions to the defaults
@@ -170,7 +166,7 @@ def ValidatePrefs():
 @route(PREFIX + '/ResetExtensions')
 def ResetExtensions():
 	Log.Debug("Resetting Extensions in Preferences.")
-	myHTTPPrefix = 'http://' + Prefs['host'] + '/:/plugins/com.plexapp.plugins.findUnmatch/prefs/'
+	myHTTPPrefix = 'http://127.0.0.1:32400/:/plugins/com.plexapp.plugins.findUnmatch/prefs/'
 	myURL = myHTTPPrefix + 'set?RESET_EXTENTIONS=False&VALID_EXTENSIONS=&IGNORED_FILES=&IGNORED_DIRS=&IGNORED_EXTENSIONS='
 	Log.Debug('Prefs Sending : ' + myURL)
 	HTTP.Request(myURL, immediate=True, headers=MYHEADER)
@@ -188,7 +184,7 @@ def scanFiles(title, key, paths):
 	files = []
 	try:
 #		Log.Debug("Section type is %s" %(sectiontype))
-		myMediaURL = Dict['PMS_URL'] + key + "/all"
+		myMediaURL = 'http://127.0.0.1:32400' + key + "/all"
 		Log.Debug("Paths to scan: %s" %(paths.split(',,,')))
 		for myPath in paths.split(',,,'):
 			files.extend(listTree(myPath))
@@ -245,13 +241,14 @@ def listTree(top, files=list(), plexignore=[]):
 			# Collapse plexignore into one table with itertools.chain.from_iterable()
 			# and remove duplicates with set() and convert back to list with list()
 			plexignoreList = list(set(itertools.chain.from_iterable(plexignore)))
-			Log.Debug("plexignoreList is: %s" %(plexignoreList))		
+#			Log.Debug("plexignoreList is: %s" %(plexignoreList))		
 		for f in os.listdir(top):
 			pathname = os.path.join(top, f)
 			# If the pathname is a dir, scan into it
 			if os.path.isdir(pathname):
 				r = listTree(pathname, r, plexignore)
-				if Prefs['ENABLE_PLEXIGNORE']: Log.Debug("plexignoreList is: %s" %(plexignoreList))
+				if Prefs['ENABLE_PLEXIGNORE']:
+					Log.Debug("plexignoreList is: %s" %(plexignoreList))
 			elif os.path.isfile(pathname):
 				myext = os.path.splitext(pathname)[1].lower().rstrip("']")
 				fname = os.path.split(pathname)[1].lower()
@@ -436,7 +433,7 @@ def logPrefs():
 	Log.Debug("*********  Starting to get User Prefs  ***************")
 	# If the old setting from v0.0.1.20 and before that allowed scanning all extensions, then update to the new setting.
 	if Prefs['VALID_EXTENSIONS'].lower() == 'all': ValidatePrefs()
-	Log.Debug("Dict['PMS_URL'] is : %s" %(Dict['PMS_URL']))
+	Log.Debug("'http://127.0.0.1:32400' is : %s" %('http://127.0.0.1:32400'))
 	Log.Debug("ALL_EXTENSIONS is : %s" %(Prefs['ALL_EXTENSIONS']))
 	Log.Debug("VALID_EXTENSIONS from prefs are : %s" %(Prefs['VALID_EXTENSIONS']))
 	Log.Debug("IGNORED_FILES from prefs are : %s" %(Prefs['IGNORED_FILES']))
@@ -499,7 +496,7 @@ def scanShowDB(myMediaURL):
 		for myMedia in myMedias:
 			bScanStatusCount += 1
 			ratingKey = myMedia.get("ratingKey")
-			myURL = "http://" + Prefs['host'] + "/library/metadata/" + ratingKey + "/allLeaves"
+			myURL = "http://127.0.0.1:32400/library/metadata/" + ratingKey + "/allLeaves"
 			Log.Debug("Show %s of %s with a RatingKey of %s at myURL: %s" %(bScanStatusCount, bScanStatusCountOf, ratingKey, myURL))
 			myMedias2 = XML.ElementFromURL(myURL, headers=MYHEADER).xpath('//Video')
 			for myMedia2 in myMedias2:
@@ -540,7 +537,7 @@ def scanArtistDB(myMediaURL):
 		for myMedia in myMedias:
 			bScanStatusCount += 1
 			ratingKey = myMedia.get("ratingKey")
-			myURL = "http://" + Prefs['host'] + "/library/metadata/" + ratingKey + "/allLeaves"
+			myURL = "http://127.0.0.1:32400/library/metadata/" + ratingKey + "/allLeaves"
 			Log.Debug("%s of %s with a RatingKey of %s at myURL: %s" %(bScanStatusCount, bScanStatusCountOf, ratingKey, myURL))
 			myMedias2 = XML.ElementFromURL(myURL, headers=MYHEADER).xpath('//Track')
 			for myMedia2 in myMedias2:
@@ -676,7 +673,7 @@ def backgroundScanThread(title, key, sectiontype, paths):
 		# Print the latest Prefs to the log file.
 		logPrefs()
 		Log.Debug("Section type is %s" %(sectiontype))
-		myMediaURL = Dict['PMS_URL'] + key + "/all"
+		myMediaURL = 'http://127.0.0.1:32400/library/sections/' + key + "/all"
 		Log.Debug("Path to medias in section is %s" %(myMediaURL))
 		# Scan the database based on the type of section
 		if sectiontype == "movie":
