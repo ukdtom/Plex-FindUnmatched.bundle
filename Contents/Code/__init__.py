@@ -24,7 +24,7 @@ import io
 import itertools
 
 
-VERSION = ' V1.0.0.3'
+VERSION = ' V1.0.0.4'
 NAME = 'FindUnmatched'
 ART = 'art-default.jpg'
 ICON = 'icon-FindUnmatched.png'
@@ -43,7 +43,7 @@ display_ignores = True	# When True, files that are ignored will be put in the lo
 # Start function
 ####################################################################################################
 def Start():
-#	print("********  Started %s on %s  **********" %(NAME  + VERSION, Platform.OS))
+	print("********  Started %s on %s  **********" %(NAME  + VERSION, Platform.OS))
 	Log.Debug("*******  Started %s on %s  ***********" %(NAME  + VERSION, Platform.OS))
 	global MYHEADER
 	Plugin.AddViewGroup('List', viewMode='List', mediaType='items')
@@ -110,7 +110,7 @@ def MainMenu(random=0):
 		sections = XML.ElementFromURL('http://127.0.0.1:32400/library/sections', headers=MYHEADER).xpath('//Directory')
 		for section in sections:
 			sectiontype = section.get('type')
-			if sectiontype != "photo":
+			if sectiontype != "photo" and sectiontype != "artist":
 				title = section.get('title')
 				key = section.get('key')
 				paths = section.xpath('Location/@path')
