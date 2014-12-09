@@ -1,11 +1,5 @@
 [
 	{
-		"id":"host",
-		"label":"IP address or hostname + port of PMS machine.",
-		"type":"text",
-		"default":"localhost:32400"
-	},
-	{
 		"id": "ALL_EXTENSIONS",
 		"label": "Scan all extensions. Overrides valid media extensions.",
 		"type": "bool",

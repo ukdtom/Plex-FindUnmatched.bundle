@@ -1,3 +1,6 @@
+V1.0.0.3
+- Fixed an error I made, causing the bundle to not work...sorry....
+
 V1.0.0.2
 - Fixed issue, causing unmatched items to show up twice
 
