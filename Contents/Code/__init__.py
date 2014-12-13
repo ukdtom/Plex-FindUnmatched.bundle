@@ -22,9 +22,10 @@ import time
 import fnmatch
 import io
 import itertools
+from urllib2 import Request, urlopen, URLError, HTTPError
+from lxml import etree as et
 
-
-VERSION = ' V1.0.0.4'
+VERSION = ' V1.0.0.5-2 ***** DEV ******'
 NAME = 'FindUnmatched'
 ART = 'art-default.jpg'
 ICON = 'icon-FindUnmatched.png'
@@ -123,8 +124,6 @@ def MainMenu(random=0):
 	Log.Debug("**********  Ending MainMenu  **********")
 	return oc
 
-
-
 ####################################################################################################
 # Called by the framework every time a user changes the prefs
 ####################################################################################################
@@ -137,7 +136,6 @@ def ValidatePrefs():
 		Dict.Save()
 	# Lets get the token again, in case credentials are switched, or token is deleted
 	global MYHEADER
-#	MYHEADER['X-Plex-Token'] = getToken()
 	if Prefs['NukeToken']:
 		Log.Debug('Resetting flag to nuke token')
 		# My master has nuked the local store, so reset the prefs flag
@@ -146,9 +144,7 @@ def ValidatePrefs():
 		Log.Debug('Prefs Sending : ' + myURL)
 		HTTP.Request(myURL, immediate=True, headers=MYHEADER)
 		# Get new token
-		getToken()
-		
-#		MYHEADER['X-Plex-Token'] = getToken()
+		getToken()		
 	# If the old setting from v0.0.1.20 and before that allowed scanning all extensions, then update to the new setting.
 	if Prefs['VALID_EXTENSIONS'].lower() == 'all': 
 		Log.Debug("VALID_EXTENSIONS=all, setting ALL_EXTENSIONS to True and resetting VALID_EXTENSIONS")
@@ -157,8 +153,6 @@ def ValidatePrefs():
 	# Do we need to reset the extentions?
 	if Prefs['RESET_EXTENTIONS']:
 		ResetExtensions()
-	
-
 
 ####################################################################################################
 # Reset the Media Extentions to the defaults
@@ -176,9 +170,6 @@ def ResetExtensions():
 ####################################################################################################
 @route(PREFIX + '/scanFiles')
 def scanFiles(title, key, paths):
-
-#def scanFiles(title, key, sectiontype, paths):
-
 	Log.Debug("*******  Starting scanFiles  ***********")
 	global bScanStatus
 	files = []
@@ -433,7 +424,6 @@ def logPrefs():
 	Log.Debug("*********  Starting to get User Prefs  ***************")
 	# If the old setting from v0.0.1.20 and before that allowed scanning all extensions, then update to the new setting.
 	if Prefs['VALID_EXTENSIONS'].lower() == 'all': ValidatePrefs()
-	Log.Debug("'http://127.0.0.1:32400' is : %s" %('http://127.0.0.1:32400'))
 	Log.Debug("ALL_EXTENSIONS is : %s" %(Prefs['ALL_EXTENSIONS']))
 	Log.Debug("VALID_EXTENSIONS from prefs are : %s" %(Prefs['VALID_EXTENSIONS']))
 	Log.Debug("IGNORED_FILES from prefs are : %s" %(Prefs['IGNORED_FILES']))
@@ -452,31 +442,53 @@ def scanMovieDB(myMediaURL):
 	Log.Debug("******* Starting scanMovieDB with an URL of %s***********" %(myMediaURL))
 	global bScanStatusCount
 	global bScanStatusCountOf
+	global MYHEADER
 	bScanStatusCount = 0
 	bScanStatusCountOf = 0
 	myMediaPaths = []
 	myTmpPath = []
 	try:
-		myMedias = XML.ElementFromURL(myMediaURL, headers=MYHEADER).xpath('//Video')
-		bScanStatusCountOf = len(myMedias)
-		for myMedia in myMedias:
-			title = myMedia.get('title')			
-			myTmpPaths = (',,,'.join(myMedia.xpath('Media/Part/@file')).split(',,,'))
-			for myTmpPath in myTmpPaths:
-				filename = urllib.unquote(myTmpPath).decode('utf8')
-				composed_filename = unicodedata.normalize('NFKC', filename)
-				myFilePath = urllib.quote(composed_filename.encode('utf8'))
-				# Remove esc backslash if present and on Windows
-				if Platform.OS == "Windows":
-					myFilePath = myFilePath.replace(':%5C%5C', ':%5C')
-				bScanStatusCount += 1
-				Log.Debug("Media #%s from database: '%s' with a path of : %s" %(bScanStatusCount, title, composed_filename))
-				myMediaPaths.append(myFilePath)
-		return myMediaPaths
+		Log.Debug('Starting to fetch the list of items in this section')
+		req = Request(myMediaURL, headers=MYHEADER)
+		response = urlopen(req)
+	except HTTPError as e:
+		Log.Critical('The server couldn\'t fulfill the request. Errorcode was %s' %e.code)
+		bScanStatus = 401
+		raise
+	except URLError as e:
+		Log.Critical('We failed to reach a server. Reason was %s' %e.reason)
+		bScanStatus = 401
+		raise
 	except:
-		Log.Critical("Detected an exception in scanMovieDB")
+		Log.Critical('Unknown error in scanMovieDb')
 		bScanStatus = 99
 		raise
+	else:
+		try:
+			# everything is fine
+			tree = et.parse(response)
+			root = tree.getroot()
+			myMedias = root.findall('.//Video')		
+			Log.Debug("Retrieved myMedias okay")
+			bScanStatusCountOf = len(myMedias)
+			for myMedia in myMedias:
+				title = myMedia.get('title')			
+				myTmpPaths = (',,,'.join(myMedia.xpath('Media/Part/@file')).split(',,,'))
+				for myTmpPath in myTmpPaths:
+					filename = urllib.unquote(myTmpPath).decode('utf8')
+					composed_filename = unicodedata.normalize('NFKC', filename)
+					myFilePath = urllib.quote(composed_filename.encode('utf8'))
+					# Remove esc backslash if present and on Windows
+					if Platform.OS == "Windows":
+						myFilePath = myFilePath.replace(':%5C%5C', ':%5C')
+					bScanStatusCount += 1
+					Log.Debug("Media #%s from database: '%s' with a path of : %s" %(bScanStatusCount, title, composed_filename))
+					myMediaPaths.append(myFilePath)
+			return myMediaPaths
+		except:
+			Log.Critical("Detected an exception in scanMovieDB")
+			bScanStatus = 99
+			raise
 	Log.Debug("******* Ending scanMovieDB ***********")
 
 ####################################################################################################
@@ -487,38 +499,64 @@ def scanShowDB(myMediaURL):
 	Log.Debug("******* Starting scanShowDB with an URL of %s***********" %(myMediaURL))
 	global bScanStatusCount
 	global bScanStatusCountOf
+	global MYHEADER
 	myMediaPaths = []
 	bScanStatusCount = 0
 	filecount = 0
 	try:
-		myMedias = XML.ElementFromURL(myMediaURL, headers=MYHEADER).xpath('//Directory')
-		bScanStatusCountOf = len(myMedias)
-		for myMedia in myMedias:
-			bScanStatusCount += 1
-			ratingKey = myMedia.get("ratingKey")
-			myURL = "http://127.0.0.1:32400/library/metadata/" + ratingKey + "/allLeaves"
-			Log.Debug("Show %s of %s with a RatingKey of %s at myURL: %s" %(bScanStatusCount, bScanStatusCountOf, ratingKey, myURL))
-			myMedias2 = XML.ElementFromURL(myURL, headers=MYHEADER).xpath('//Video')
-			for myMedia2 in myMedias2:
-				title = myMedia2.get("grandparentTitle") + "/" + myMedia2.get("title")
-				# Using three commas as one has issues with some filenames.
-				myFilePath = (',,,'.join(myMedia2.xpath('Media/Part/@file')).split(',,,'))
-				for myFilePath2 in myFilePath:
-					filename = urllib.unquote(myFilePath2).decode('utf8')
-					composed_filename = unicodedata.normalize('NFKC', filename)
-					myFilePath2 = urllib.quote(composed_filename.encode('utf8'))
-					# Remove esc backslash if present and on Windows
-					# The Colon prevents breaking Windows file shares.
-					if Platform.OS == "Windows":
-						myFilePath2 = myFilePath2.replace(':%5C%5C', ':%5C')
-					myMediaPaths.append(myFilePath2)
-					filecount += 1
-					Log.Debug("Media from database: '%s' with a path of : %s" %(title, composed_filename))
-		return (myMediaPaths, filecount)
+		Log.Debug('Starting to fetch the list of items in this section')
+		req = Request(myMediaURL, headers=MYHEADER)
+		response = urlopen(req)
+	except HTTPError as e:
+		Log.Critical('The server couldn\'t fulfill the request. Errorcode was %s' %e.code)
+		bScanStatus = 401
+		raise
+	except URLError as e:
+		Log.Critical('We failed to reach a server. Reason was %s' %e.reason)
+		bScanStatus = 401
+		raise
 	except:
-		Log.Critical("Detected an exception in scanShowDB")
+		Log.Critical('Unknown error in scanMovieDb')
 		bScanStatus = 99
-		raise # Dumps the error so you can see what the problem is
+		raise
+	else:
+		try:
+			# everything is fine
+			tree = et.parse(response)
+			root = tree.getroot()
+			myMedias = root.findall('.//Directory')		
+			Log.Debug("Retrieved myMedias okay")
+			bScanStatusCountOf = len(myMedias)
+			for myMedia in myMedias:
+				bScanStatusCount += 1
+				ratingKey = myMedia.get("ratingKey")
+				myURL = "http://127.0.0.1:32400/library/metadata/" + ratingKey + "/allLeaves"
+				Log.Debug("Show %s of %s with a RatingKey of %s at myURL: %s" %(bScanStatusCount, bScanStatusCountOf, ratingKey, myURL))
+				req = Request(myURL, headers=MYHEADER)
+				response = urlopen(req)
+				tree2 = et.parse(response)
+				root2 = tree2.getroot()
+				myMedias2 = root2.findall('.//Video')
+				for myMedia2 in myMedias2:
+					title = myMedia2.get("grandparentTitle") + "/" + myMedia2.get("title")
+					# Using three commas as one has issues with some filenames.
+					myFilePath = (',,,'.join(myMedia2.xpath('Media/Part/@file')).split(',,,'))
+					for myFilePath2 in myFilePath:
+						filename = urllib.unquote(myFilePath2).decode('utf8')
+						composed_filename = unicodedata.normalize('NFKC', filename)
+						myFilePath2 = urllib.quote(composed_filename.encode('utf8'))
+						# Remove esc backslash if present and on Windows
+						# The Colon prevents breaking Windows file shares.
+						if Platform.OS == "Windows":
+							myFilePath2 = myFilePath2.replace(':%5C%5C', ':%5C')
+						myMediaPaths.append(myFilePath2)
+						filecount += 1
+						Log.Debug("Media from database: '%s' with a path of : %s" %(title, composed_filename))
+			return (myMediaPaths, filecount)
+		except:
+			Log.Critical("Detected an exception in scanShowDB")
+			bScanStatus = 99
+			raise # Dumps the error so you can see what the problem is
 	Log.Debug("******* Ending scanShowDB ***********")
 
 ####################################################################################################
