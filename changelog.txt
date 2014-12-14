@@ -1,3 +1,7 @@
+V1.0.0.5
+- Moved away from using the framework, when requesting large amout of data from the PMS
+- Removed HOST setting from the preferences....Not needed anymore
+
 V1.0.0.4
 - Regression fixed....It was possible to select an audio section, even though those ain't supported yet
 
