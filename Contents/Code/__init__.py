@@ -25,7 +25,7 @@ import itertools
 from urllib2 import Request, urlopen, URLError, HTTPError
 from lxml import etree as et
 
-VERSION = ' V1.0.0.5-2 ***** DEV ******'
+VERSION = ' V1.0.0.5'
 NAME = 'FindUnmatched'
 ART = 'art-default.jpg'
 ICON = 'icon-FindUnmatched.png'
@@ -44,7 +44,7 @@ display_ignores = True	# When True, files that are ignored will be put in the lo
 # Start function
 ####################################################################################################
 def Start():
-	print("********  Started %s on %s  **********" %(NAME  + VERSION, Platform.OS))
+#	print("********  Started %s on %s  **********" %(NAME  + VERSION, Platform.OS))
 	Log.Debug("*******  Started %s on %s  ***********" %(NAME  + VERSION, Platform.OS))
 	global MYHEADER
 	Plugin.AddViewGroup('List', viewMode='List', mediaType='items')
@@ -732,7 +732,6 @@ def backgroundScanThread(title, key, sectiontype, paths):
 		bScanStatusCount = 0
 		bScanStatusCountOf = filecount
 		files = scanFiles(title, key, paths)
-# GED		files = scanFiles(title, key, sectiontype, paths)
 		# Stop scanner on error
 		if bScanStatus >= 90: return
 		# Find unmatched files
