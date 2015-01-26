@@ -1,3 +1,6 @@
+V1.0.0.6
+- Don't treat a blank token as valid.
+
 V1.0.0.5
 - Moved away from using the framework, when requesting large amout of data from the PMS
 - Removed HOST setting from the preferences....Not needed anymore
@@ -36,8 +39,6 @@ v0.0.1.27
 -bScanStatusCount will now only count valid files in listTree(). Allows a more accurate count of the expected number of files from the database.
 -Fixed a typo in DefaultPrefs.json and cleaned it up a bit.
 
-=======
->>>>>>> master
 v0.0.1.26
 -Changed icon to follow the std. template from Plex
 
