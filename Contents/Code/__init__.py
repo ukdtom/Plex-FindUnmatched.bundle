@@ -25,7 +25,7 @@ import itertools
 from urllib2 import Request, urlopen, URLError, HTTPError
 from lxml import etree as et
 
-VERSION = ' V1.0.0.5'
+VERSION = ' V1.0.0.6'
 NAME = 'FindUnmatched'
 ART = 'art-default.jpg'
 ICON = 'icon-FindUnmatched.png'
@@ -65,7 +65,7 @@ def getToken():
 	Log.Debug('Starting to get the token')
 	if Prefs['Authenticate']:
 		# Start by checking, if we already got a token
-		if 'authentication_token' in Dict and Dict['authentication_token'] != 'NuKeMe':
+		if 'authentication_token' in Dict and Dict['authentication_token'] != 'NuKeMe' and Dict['authentication_token'] != '':
 			Log.Debug('Got a token from local storage')
 			global MYHEADER
 			MYHEADER['X-Plex-Token'] = Dict['authentication_token']
