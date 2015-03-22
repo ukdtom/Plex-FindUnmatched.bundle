@@ -25,7 +25,7 @@ import itertools
 from urllib2 import Request, urlopen, URLError, HTTPError
 from lxml import etree as et
 
-VERSION = ' V1.0.0.6'
+VERSION = ' V1.0.0.7 - DEV'
 NAME = 'FindUnmatched'
 ART = 'art-default.jpg'
 ICON = 'icon-FindUnmatched.png'
@@ -34,6 +34,8 @@ PREFIX = '/applications/findUnmatched'
 MYHEADER = {}
 APPGUID = '7608cf36-742b-11e4-8b39-00089b13a0b2'
 DESCRIPTION = 'Find medias missed by Plex scanners'
+EXTRASDIRS = ('Behind The Scenes', 'Deleted Scenes', 'Interviews', 'Scenes', 'Trailers')
+EXTRAFILES = ('-behindthescenes', '-deleted', '-interview', '-scene', '-trailer')
 
 myResults = []			# Contains the end results
 bScanStatus = 0			# Current status of the background scan
@@ -44,7 +46,7 @@ display_ignores = True	# When True, files that are ignored will be put in the lo
 # Start function
 ####################################################################################################
 def Start():
-#	print("********  Started %s on %s  **********" %(NAME  + VERSION, Platform.OS))
+	print("********  Started %s on %s  **********" %(NAME  + VERSION, Platform.OS))
 	Log.Debug("*******  Started %s on %s  ***********" %(NAME  + VERSION, Platform.OS))
 	global MYHEADER
 	Plugin.AddViewGroup('List', viewMode='List', mediaType='items')
@@ -115,8 +117,9 @@ def MainMenu(random=0):
 				title = section.get('title')
 				key = section.get('key')
 				paths = section.xpath('Location/@path')
+				thumb = 'http://127.0.0.1:32400' + section.get('thumb')
 				Log.Debug("Title of section is %s with a key of %s and a path of : %s" %(title, key, paths))
-				oc.add(DirectoryObject(key=Callback(backgroundScan, title=title, sectiontype=sectiontype, key=key, random=time.clock(), paths=',,,'.join(paths)), title='Look in section "' + title + '"', summary='Look for unmatched files in "' + title + '"'))
+				oc.add(DirectoryObject(key=Callback(backgroundScan, title=title, sectiontype=sectiontype, key=key, random=time.clock(), paths=',,,'.join(paths)), thumb=thumb, title='Look in section "' + title + '"', summary='Look for unmatched files in "' + title + '"'))
 	except:
 		Log.Critical("Exception happened in MainMenu")
 		raise
@@ -217,6 +220,10 @@ def listTree(top, files=list(), plexignore=[]):
 	elif os.path.normpath(top).lower() in Prefs['IGNORED_DIRS'].lower():
 		Log.Debug("Directory is in IGNORED_DIRS: %s" %(top))
 		return r
+	# Skip if this is a local extras directory
+	if os.path.normpath(top).endswith(EXTRASDIRS):
+		Log.Debug("Directory is in EXTRASDIRS: %s" %(top))
+		return r
 	try:
 		if not os.path.exists(top):
 			Log.Debug("The file share [%s] is not mounted" %(top))
@@ -263,6 +270,11 @@ def listTree(top, files=list(), plexignore=[]):
 					if (display_ignores): Log.Debug("Ignoring hidden file: %s" %(pathname))
 					continue
 				###############################################
+				# Check if this is a local extra file, and if so, skip it
+				if os.path.splitext(os.path.basename(fname))[0].endswith(EXTRAFILES):
+					Log.Debug("Ignoring extra file: %s" %(pathname))
+					continue
+				###############################################
 				# Search the ignoredFilesList for a match against the current file.
 				# Needed for wildcards. Ugly but it works.
 				for ignoredItem in ignoredFilesList:
@@ -300,7 +312,7 @@ def listTree(top, files=list(), plexignore=[]):
 		raise
 
 ####################################################################################################
-# This function will read and format a givin .plexignore file
+# This function will read and format a given .plexignore file
 ####################################################################################################
 def readPlexignore(file):
 	Log.Debug("*******  Starting readPlexignore  ***********")
@@ -431,6 +443,7 @@ def logPrefs():
 	Log.Debug("IGNORED_EXTENSIONS from prefs are : %s" %(Prefs['IGNORED_EXTENSIONS']))
 	Log.Debug("IGNORE_HIDDEN is : %s" %(Prefs['IGNORE_HIDDEN']))
 	Log.Debug("ENABLE_PLEXIGNORE is : %s" %(Prefs['ENABLE_PLEXIGNORE']))
+	Log.Debug("Plex.tv Authentication is %s" %(Prefs['Authenticate']))
 	Log.Debug("*********  Ending get User Prefs  ***************")
 	return
 

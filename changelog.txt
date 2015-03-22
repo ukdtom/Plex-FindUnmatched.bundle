@@ -1,3 +1,7 @@
+V1.0.0.7
+- Main menu icons now reflect the type of section
+- Local extras will now be ignored
+
 V1.0.0.6
 - Don't treat a blank token as valid.
 
