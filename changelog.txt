@@ -1,3 +1,9 @@
+v1.0.0.8
+- Corrected a bug, where the stored token would be invalid, if more than one server was part of the home
+- Removed option to clear locally stored token, since that's no longer used
+- Added directory named: "lost+found" to the default ignore list
+- Added a new setting, allowing you to get the results written out to a txt file named FindUnmatched.txt, located in the first filepath of the library
+
 V1.0.0.7
 - Main menu icons now reflect the type of section
 - Local extras will now be ignored

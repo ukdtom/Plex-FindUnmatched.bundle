@@ -1,5 +1,11 @@
 [
 	{
+		"id": "SAVE_TO_FILE",
+		"label": "Save result to first defined path in a section as well",
+		"type": "bool",
+		"default": "False"
+	},	
+	{
 		"id": "ALL_EXTENSIONS",
 		"label": "Scan all extensions. Overrides valid media extensions.",
 		"type": "bool",
@@ -21,7 +27,7 @@
 		"id":"IGNORED_DIRS",
 		"label":"Ignorred directories, seperated with a comma.",
 		"type":"text",
-		"default":".@__thumb, .AppleDouble"
+		"default":".@__thumb, .AppleDouble, lost+found"
 	},
 	{
 		"id":"IGNORED_EXTENSIONS",
@@ -65,11 +71,5 @@
 		"type":"text",
 		"option": "hidden",
 		"default":""
-	},
-	{
-		"id":"NukeToken",
-		"label":"Delete local stored token, and force new one from plex.tv",
-		"type":"bool",
-		"default":"false"
 	}
 ]

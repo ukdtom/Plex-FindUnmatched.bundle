@@ -25,7 +25,7 @@ import itertools
 from urllib2 import Request, urlopen, URLError, HTTPError
 from lxml import etree as et
 
-VERSION = ' V1.0.0.7 - DEV'
+VERSION = ' V1.0.0.8'
 NAME = 'FindUnmatched'
 ART = 'art-default.jpg'
 ICON = 'icon-FindUnmatched.png'
@@ -41,12 +41,13 @@ myResults = []			# Contains the end results
 bScanStatus = 0			# Current status of the background scan
 initialTimeOut = 10		# When starting a scan, how long in seconds to wait before displaying a status page. Needs to be at least 1.
 display_ignores = True	# When True, files that are ignored will be put in the log
+SectionPath = []
 
 ####################################################################################################
 # Start function
 ####################################################################################################
 def Start():
-	print("********  Started %s on %s  **********" %(NAME  + VERSION, Platform.OS))
+#	print("********  Started %s on %s  **********" %(NAME  + VERSION, Platform.OS))
 	Log.Debug("*******  Started %s on %s  ***********" %(NAME  + VERSION, Platform.OS))
 	global MYHEADER
 	Plugin.AddViewGroup('List', viewMode='List', mediaType='items')
@@ -66,36 +67,30 @@ def Start():
 def getToken():
 	Log.Debug('Starting to get the token')
 	if Prefs['Authenticate']:
-		# Start by checking, if we already got a token
-		if 'authentication_token' in Dict and Dict['authentication_token'] != 'NuKeMe' and Dict['authentication_token'] != '':
-			Log.Debug('Got a token from local storage')
-			global MYHEADER
-			MYHEADER['X-Plex-Token'] = Dict['authentication_token']
-		else:
-			Log.Debug('Need to generate a token first from plex.tv')
-			userName = Prefs['Plex_User']
-			userPwd = Prefs['Plex_Pwd']
-			myUrl = 'https://plex.tv/users/sign_in.json'
-			# Create the authentication string
-			base64string = String.Base64Encode('%s:%s' % (userName, userPwd))
-			# Create the header
-			MYAUTHHEADER= {}
-			MYAUTHHEADER['X-Plex-Product'] = DESCRIPTION
-			MYAUTHHEADER['X-Plex-Client-Identifier'] = APPGUID
-			MYAUTHHEADER['X-Plex-Version'] = VERSION
-			MYAUTHHEADER['Authorization'] = 'Basic ' + base64string
-			MYAUTHHEADER['X-Plex-Device-Name'] = NAME
-			# Send the request
-			try:
-				httpResponse = HTTP.Request(myUrl, headers=MYAUTHHEADER, method='POST')
-				myToken = JSON.ObjectFromString(httpResponse.content)['user']['authentication_token']
-				Log.Debug('Response from plex.tv was : %s' %(httpResponse.headers["status"]))
-			except:
-				Log.Critical('Exception happend when trying to get a token from plex.tv')
-				Log.Critical('Returned answer was %s' %httpResponse.content)
-				Log.Critical('Status was: %s' %httpResponse.headers) 			
-			Dict['authentication_token'] = myToken
-			Dict.Save()
+		Log.Debug('Need to generate a token first from plex.tv')
+		userName = Prefs['Plex_User']
+		userPwd = Prefs['Plex_Pwd']
+		myUrl = 'https://plex.tv/users/sign_in.json'
+		# Create the authentication string
+		base64string = String.Base64Encode('%s:%s' % (userName, userPwd))
+		# Create the header
+		MYAUTHHEADER= {}
+		MYAUTHHEADER['X-Plex-Product'] = DESCRIPTION
+		MYAUTHHEADER['X-Plex-Client-Identifier'] = APPGUID
+		MYAUTHHEADER['X-Plex-Version'] = VERSION
+		MYAUTHHEADER['Authorization'] = 'Basic ' + base64string
+		MYAUTHHEADER['X-Plex-Device-Name'] = NAME
+		# Send the request
+		try:
+			httpResponse = HTTP.Request(myUrl, headers=MYAUTHHEADER, method='POST')
+			myToken = JSON.ObjectFromString(httpResponse.content)['user']['authentication_token']
+			Log.Debug('Response from plex.tv was : %s' %(httpResponse.headers["status"]))
+		except:
+			Log.Critical('Exception happend when trying to get a token from plex.tv')
+			Log.Critical('Returned answer was %s' %httpResponse.content)
+			Log.Critical('Status was: %s' %httpResponse.headers) 			
+		global MYHEADER
+		MYHEADER['X-Plex-Token'] = myToken
 	else:
 			Log.Debug('Authentication disabled')
 	ValidatePrefs()
@@ -131,23 +126,7 @@ def MainMenu(random=0):
 # Called by the framework every time a user changes the prefs
 ####################################################################################################
 @route(PREFIX + '/ValidatePrefs')
-def ValidatePrefs():
-	if Prefs['NukeToken']:
-		# My master wants to nuke the local store
-		Log.Debug('Removing Token from local storage')
-		Dict['authentication_token'] = 'NuKeMe'
-		Dict.Save()
-	# Lets get the token again, in case credentials are switched, or token is deleted
-	global MYHEADER
-	if Prefs['NukeToken']:
-		Log.Debug('Resetting flag to nuke token')
-		# My master has nuked the local store, so reset the prefs flag
-		myHTTPPrefix = 'http://127.0.0.1:32400/:/plugins/com.plexapp.plugins.findUnmatch/prefs/'
-		myURL = myHTTPPrefix + 'set?NukeToken=0'
-		Log.Debug('Prefs Sending : ' + myURL)
-		HTTP.Request(myURL, immediate=True, headers=MYHEADER)
-		# Get new token
-		getToken()		
+def ValidatePrefs():	
 	# If the old setting from v0.0.1.20 and before that allowed scanning all extensions, then update to the new setting.
 	if Prefs['VALID_EXTENSIONS'].lower() == 'all': 
 		Log.Debug("VALID_EXTENSIONS=all, setting ALL_EXTENSIONS to True and resetting VALID_EXTENSIONS")
@@ -175,12 +154,14 @@ def ResetExtensions():
 def scanFiles(title, key, paths):
 	Log.Debug("*******  Starting scanFiles  ***********")
 	global bScanStatus
+	global SectionPath 
+	SectionPath = paths.split(',,,')
 	files = []
 	try:
 #		Log.Debug("Section type is %s" %(sectiontype))
 		myMediaURL = 'http://127.0.0.1:32400' + key + "/all"
-		Log.Debug("Paths to scan: %s" %(paths.split(',,,')))
-		for myPath in paths.split(',,,'):
+		Log.Debug("Paths to scan: %s" %SectionPath)
+		for myPath in SectionPath:
 			files.extend(listTree(myPath))
 		Log.Debug("********  Files found are the following: ***************")
 		Log.Debug(files)
@@ -365,6 +346,21 @@ def results(title):
 		oc2.add(DirectoryObject(key=Callback(MainMenu, random=time.clock()), title=title, summary="Unmatched file: \n\n"+title2))
 	# Reset the scanner status
 	bScanStatus = 0
+
+	if Prefs['SAVE_TO_FILE']:
+		# Need to save output to a file as well
+		myFile = os.path.join(SectionPath[0], 'FindUnmatched.txt')
+		Log.Debug('Writing out results to file: %s' %myFile)
+		with io.open(myFile, 'wb') as f:
+			for item in myResults:
+				title=item.decode('utf-8','ignore')
+				title2=title
+				if title[0] == '[':
+					title = title[1:]
+				if title[len(title)-1] == ']':
+					title = title[:-1]
+				f.write(title + '\n')
+
 	Log.Debug("*******  Ending results  ***********")
 	return oc2
 
@@ -617,7 +613,7 @@ def scanArtistDB(myMediaURL):
 # Start the scanner in a background thread and provide status while running
 ####################################################################################################
 @route(PREFIX + '/backgroundScan')
-def backgroundScan(title='', key='', sectiontype='', random=0, paths=[], statusCheck=0):
+def backgroundScan(title='', key='', sectiontype='', random=0, paths=[], statusCheck=0, SectionPath=''):
 #def backgroundScan(title, key, sectiontype, random=0, paths=[]):
 	Log.Debug("******* Starting backgroundScan *********")
 	# Current status of the Background Scanner:
