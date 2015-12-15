@@ -1,3 +1,6 @@
+v1.0.0.9
+- made sure, that new local extra files with the type -short and -featurette are skipped during compare
+
 v1.0.0.8
 - Corrected a bug, where the stored token would be invalid, if more than one server was part of the home
 - Removed option to clear locally stored token, since that's no longer used

@@ -25,7 +25,7 @@ import itertools
 from urllib2 import Request, urlopen, URLError, HTTPError
 from lxml import etree as et
 
-VERSION = ' V1.0.0.8'
+VERSION = ' V1.0.0.9'
 NAME = 'FindUnmatched'
 ART = 'art-default.jpg'
 ICON = 'icon-FindUnmatched.png'
@@ -35,7 +35,7 @@ MYHEADER = {}
 APPGUID = '7608cf36-742b-11e4-8b39-00089b13a0b2'
 DESCRIPTION = 'Find medias missed by Plex scanners'
 EXTRASDIRS = ('Behind The Scenes', 'Deleted Scenes', 'Interviews', 'Scenes', 'Trailers')
-EXTRAFILES = ('-behindthescenes', '-deleted', '-interview', '-scene', '-trailer')
+EXTRAFILES = ('-behindthescenes', '-deleted', '-interview', '-scene', '-trailer', '-short', '-featurette')
 
 myResults = []			# Contains the end results
 bScanStatus = 0			# Current status of the background scan
