@@ -287,6 +287,7 @@ def listTree(top, files=list(), plexignore=[]):
 		return r
 	except UnicodeDecodeError:
 		Log.Critical("Detected an invalid caracter in the file/directory following this : %s" %(pathname))
+                return r
 	except:
 		Log.Critical("Detected an exception in listTree")
 		bScanStatus = 99
