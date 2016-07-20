@@ -15,7 +15,7 @@ V1.0.0.6
 - Don't treat a blank token as valid.
 
 V1.0.0.5
-- Moved away from using the framework, when requesting large amout of data from the PMS
+- Moved away from using the framework, when requesting large amount of data from the PMS
 - Removed HOST setting from the preferences....Not needed anymore
 
 V1.0.0.4
@@ -44,7 +44,7 @@ v0.0.1.28
 -There is now an option to ignore files that start with a dot in the Prefs.
 -Added .plexignore to the default ignored files.
 
-v0.0.1.27 
+v0.0.1.27
 -Check for a valid host setting. If the host is unreachable, reset to localhost:32400
 -Sometimes the web client will reload the scanStatus and if the scanner was not running it would trigger a new scan. It now presents a menu to view the last results or go to the main menu.
 -Moved ignored files checking from findUnmatchedFiles() to listTree() to put it alongside checking .plexignore. This helps optimize the code a bit.
@@ -144,15 +144,15 @@ fixed backslash getting escaped on windows platform
 
 V0.0.1.8:
 
-Fixed a brainfart from my part, cutting off the last caracter in the html reporting
+Fixed a brainfart from my part, cutting off the last character in the html reporting
 
 V0.0.1.7:
 
-As a partial workaround for a channel timeout of the API, when scanning a HUGE section, I devided the search into 3 different steps.
+As a partial workaround for a channel timeout of the API, when scanning a HUGE section, I divided the search into 3 different steps.
 Still not perfect, and will still timeout for some people, but as said, only with either a HUGE section, a non-optimized database or a slow file-system.
 I'm still scratching my head here on how-to solve this, but haven't given up yet.
 
-Fixed errors with strange caracters
+Fixed errors with strange characters
 Fixed issue when running on windows @ the same time...
 (Looks like Unicode, that I hate, is also my friend here)
 
@@ -181,7 +181,7 @@ Fixed issue with result showing multiple times
 V0.0.1.1:
 
 Fixed multipath in sections
-Fixed problem with movie sections vs. TV-Series sectiom
+Fixed problem with movie sections vs. TV-Series section
 
 V0.0.1.0:
 
@@ -194,4 +194,3 @@ Added version file
 V0.0.0.9:
 
 Initial version
-

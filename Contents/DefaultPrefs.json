@@ -4,7 +4,7 @@
 		"label": "Save result to first defined path in a section as well",
 		"type": "bool",
 		"default": "False"
-	},	
+	},
 	{
 		"id": "ALL_EXTENSIONS",
 		"label": "Scan all extensions. Overrides valid media extensions.",
@@ -13,25 +13,25 @@
 	},
 	{
 		"id":"VALID_EXTENSIONS",
-		"label":"Valid media extentions to scan for.",
+		"label":"Valid media extensions to scan for.",
 		"type":"text",
 		"default":".m4v, .3gp, .nsv, .ts, .ty, .strm, .rm, .rmvb, .m3u, .mov, .qt, .divx, .xvid, .bivx, .vob, .nrg, .img, .iso, .pva, .wmv, .asf, .asx, .ogm, .m2v, .avi, .bin, .dat, .dvr-ms, .mpg, .mpeg, .mp4, .mkv, .avc, .vp3, .svq3, .nuv, .viv, .dv, .fli, .flv, .rar, .001, .wpl, .zip, .jpg, .mp3"
 	},
 	{
 		"id":"IGNORED_FILES",
-		"label":"Files that are ignorred, seperated with a comma, and * is allowed as a wildcard.",
+		"label":"Files that are ignored, separated with a comma, and * is allowed as a wildcard.",
 		"type":"text",
 		"default":"imdb.nfo, .DS_Store, __db.001, Thumbs.db, .plexignore"
 	},
 	{
 		"id":"IGNORED_DIRS",
-		"label":"Ignorred directories, seperated with a comma.",
+		"label":"Ignored directories, separated with a comma.",
 		"type":"text",
 		"default":".@__thumb, .AppleDouble, lost+found"
 	},
 	{
 		"id":"IGNORED_EXTENSIONS",
-		"label":"Ignorred extentions, seperated with a comma. Doesn't support wildcards.",
+		"label":"Ignored extentions, separated with a comma. Doesn't support wildcards.",
 		"type":"text",
 		"default":".srt, .xml, .idx, .jpg, .sub, .nfo, .png, .gif, .txt, .rtf, .m3u, .rar, .sfv, .md5, .ico, .doc, .zip, .SRT2UTF-8"
 	},
@@ -40,16 +40,16 @@
 		"label": "Use .plexignore files.",
 		"type": "bool",
 		"default": "True"
-	}, 
+	},
 	{
 		"id": "IGNORE_HIDDEN",
-		"label": "Ignore Linux style hidden files. Files that start with a dot. ex: .hidden",
+		"label": "Ignore Linux-style hidden files (files that start with a dot — e.g., .hidden)",
 		"type": "bool",
 		"default": "True"
-	}, 
+	},
 	{
 		"id": "RESET_EXTENTIONS",
-		"label": "Reset extentions to default",
+		"label": "Reset extensions to default",
 		"type": "bool",
 		"default": "False"
 	},
